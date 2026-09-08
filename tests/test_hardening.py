@@ -123,3 +123,12 @@ class HardeningTests(unittest.TestCase):
             self.store.ingest("user-journal", [{}], "bad", gap_message="Must roll back")
         self.assertEqual(self.store.cursor("user-journal"), "next")
         self.assertEqual(len(self.store.events()), 1)
+
+    def test_wall_clock_rewind_cannot_extend_preview_lifetime(self):
+        self.store.monotonic = lambda: 100
+        incident = self.store.create_incident("Clock change")
+        preview = self.store.preview_export(incident["id"])
+        self.store.monotonic = lambda: 401
+        self.store.now = lambda: 1
+        with self.assertRaises(ValueError):
+            self.store.confirm_export(preview["token"])

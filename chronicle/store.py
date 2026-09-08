@@ -34,6 +34,7 @@ class Store:
     def __init__(self, path, now=None, event_limit=10000):
         self.path = private_dir(path)
         self.now = now or (lambda: time.time_ns() // 1000)
+        self.monotonic = time.monotonic
         self.event_limit = max(1, min(event_limit, 10000))
         self.previews = {}
         db = self.path / "chronicle.sqlite3"
@@ -252,13 +253,14 @@ class Store:
             raise ValueError("export exceeds 2 MiB")
         token = uuid.uuid4().hex
         # Only the most recent preview is valid; bounds memory and avoids stale confirmations.
-        self.previews = {token: (self.now() + 300_000_000, body)}
+        expiry = self.now() + 300_000_000
+        self.previews = {token: (expiry, body, self.monotonic() + 300)}
         return {"token": token, "text": body, "sha256": hashlib.sha256(body.encode()).hexdigest(),
-                "expires_us": self.now() + 300_000_000}
+                "expires_us": expiry}
 
     def confirm_export(self, token):
         preview = self.previews.pop(token, None)
-        if not preview or preview[0] < self.now():
+        if not preview or preview[0] <= self.now() or preview[2] <= self.monotonic():
             raise ValueError("preview expired or replaced; review again")
         folder = private_dir(self.path / "exports")
         if len(list(folder.iterdir())) >= 32:

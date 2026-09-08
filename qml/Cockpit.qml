@@ -97,6 +97,7 @@ FocusScope {
             root.toggleFreeze();
             event.accepted = true;
         } else if (event.key === Qt.Key_Slash && !event.modifiers) {
+            root.page = 0;
             search.forceActiveFocus();
             event.accepted = true;
         } else if (event.key === Qt.Key_M && (event.modifiers & Qt.ControlModifier)) {
@@ -666,8 +667,8 @@ FocusScope {
         ChronicleLabel {
             Layout.fillWidth: true
             font.pixelSize: Style.font.caption
-            color: root.service && root.service.lastError ? Color.urgent : Color.accent
-            text: root.service ? (root.service.lastError || root.service.lastAction || "Local evidence · correlation is not causation · no automatic repairs") : "Waiting for Chronicle service"
+            color: root.service && (root.service.lastError || root.live.storage_error) ? Color.urgent : Color.accent
+            text: root.service ? (root.service.lastError || root.live.storage_error || root.service.lastAction || "Local evidence · correlation is not causation · no automatic repairs") : "Waiting for Chronicle service"
         }
     }
     Timer {

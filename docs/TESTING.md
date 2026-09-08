@@ -37,6 +37,11 @@ other warnings and failed imports are errors. This is not a zero-warning claim.
 
 ## Observed results
 
+- Final local suite at the acceptance refinement stage: 46 Python tests, 11
+  JavaScript tests, and 27 Qt cases including init/cleanup cases. All pass;
+  the Qt suite also passes at 1.5× scale. Real transport integration and native
+  import resolution are independent checks, not counted as unit tests.
+
 - First GitHub Actions run `34172156337` passed all jobs: Python 3.11, Python
   3.14, and offscreen Qt (normal and 1.5× scale). Subsequent revisions must be
   checked independently; see the repository's Actions page for exact SHAs.

@@ -77,6 +77,22 @@ TestCase {
         compare(service.request("bookmark", {}), "");
         verify(service.lastError.indexOf("unavailable") >= 0);
     }
+    function test_storage_recovery_does_not_leave_stale_transport_error() {
+        service.handleLine(JSON.stringify({
+            type: "snapshot",
+            protocol: 1,
+            session: "one",
+            storage_error: "Storage full"
+        }));
+        service.handleLine(JSON.stringify({
+            type: "snapshot",
+            protocol: 1,
+            session: "one",
+            storage_error: ""
+        }));
+        compare(service.lastError, "");
+        compare(service.snapshot.storage_error, "");
+    }
     function test_panel_owners_are_independent() {
         service.setPanelOpen("left", true);
         service.setPanelOpen("right", true);

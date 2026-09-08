@@ -86,9 +86,10 @@ Persistent state defaults to `$XDG_STATE_HOME/nshkr.chronicle`, or
 the panel is closed. Pause stops source collection; it does not erase history.
 
 Messages are bounded and redacted before persistence, but generic redaction
-cannot recognize every secret. Review all exports before sharing. Hostnames,
-process command lines, arbitrary journal fields and raw journal objects are
-not persisted. Existing journal files are never modified.
+cannot recognize every secret. Review all exports before sharing. The journal's
+`_HOSTNAME` and `_CMDLINE` fields, other unselected fields, and raw journal objects
+are not persisted. Message text and identifiers may still reveal hostnames or
+other private context. Existing journal files are never modified.
 
 See [privacy and source coverage](docs/PRIVACY-AND-SOURCES.md),
 [operator workflows](docs/OPERATOR-GUIDE.md), and [security reporting](SECURITY.md).

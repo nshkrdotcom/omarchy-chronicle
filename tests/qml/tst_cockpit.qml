@@ -103,6 +103,13 @@ TestCase {
         compare(cockpit.page, 3);
         verify(findChild(cockpit, "sourcesTab").activeFocus);
     }
+    function test_search_shortcut_returns_to_timeline() {
+        cockpit.page = 3;
+        cockpit.forceActiveFocus();
+        keyClick(Qt.Key_Slash);
+        compare(cockpit.page, 0);
+        verify(findChild(cockpit, "searchInput").activeFocus);
+    }
     function test_typing_space_in_search_does_not_freeze() {
         const field = findChild(cockpit, "searchInput");
         field.forceActiveFocus();

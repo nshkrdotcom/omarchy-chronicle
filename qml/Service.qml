@@ -71,8 +71,6 @@ Item {
                     lastAction = "Recorder restarted; selections need review.";
                 }
                 snapshot = data;
-                if (data.storage_error)
-                    lastError = String(data.storage_error);
                 restartDelay = 1000;
                 return;
             }
