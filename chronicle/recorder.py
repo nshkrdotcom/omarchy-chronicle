@@ -143,6 +143,11 @@ class Recorder:
             return {"refreshed": True}
         if cmd == "history":
             return self.store.history(**{key: value for key, value in data.items() if key not in ("cmd", "request_id")})
+        if cmd == "context":
+            return self.store.context(text("id"), **{key: data[key] for key in
+                ("scope", "radius_seconds", "limit", "ceiling") if key in data})
+        if cmd == "analyze":
+            return self.store.analyze(**{key: value for key, value in data.items() if key not in ("cmd", "request_id")})
         if cmd == "save_view":
             return self.store.save_view(text("label", "Saved view", 100), data)
         if cmd == "remove_view":
@@ -189,7 +194,7 @@ class Recorder:
             return {}
         if cmd == "preview_export":
             detail = boolean("detail") if "detail" in data else False
-            return self.store.preview_export(text("id"), detail)
+            return self.store.preview_export(text("id"), detail, text("format", "json", 16))
         if cmd == "confirm_export":
             return self.store.confirm_export(text("token"))
         if cmd == "shutdown":

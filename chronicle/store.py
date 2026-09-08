@@ -160,7 +160,7 @@ class Store:
             self.db.execute("INSERT INTO samples(time_us,body) VALUES(?,?)", (self.now(), encode(metrics(values))))
             self.db.execute("DELETE FROM samples WHERE id NOT IN (SELECT id FROM samples ORDER BY id DESC LIMIT 720)")
 
-    def history(self, **options):
+    def _selection(self, options):
         query = history_query(options)
         ceiling = query["ceiling"]
         if ceiling is None:
@@ -174,7 +174,28 @@ class Store:
         if query["search"]:
             clauses.append("instr(casefold(json_extract(body,'$.message') || ' ' || json_extract(body,'$.unit')),?)>0")
             args.append(query["search"].casefold())
+        if query["unit"]:
+            clauses.append("json_extract(body,'$.unit')=?")
+            args.append(query["unit"])
+        for term in query["exclude"]:
+            clauses.append("instr(casefold(json_extract(body,'$.message') || ' ' || json_extract(body,'$.unit')),?)=0")
+            args.append(term.casefold())
         where = " WHERE " + " AND ".join(clauses)
+        return query, ceiling, where, args
+
+    def retained(self):
+        return dict(self.db.execute("SELECT count(*) AS count,min(time_us) AS from_us,max(time_us) AS to_us FROM events").fetchone())
+
+    def context(self, ident, **options):
+        from .investigation import context
+        return context(self, ident, **options)
+
+    def analyze(self, **options):
+        from .investigation import analyze
+        return analyze(self, options)
+
+    def history(self, **options):
+        query, ceiling, where, args = self._selection(options)
         density = [{"count": 0, "errors": 0, "warnings": 0} for _ in range(48)]
         count = 0
         span = max(1, query["to_us"] - query["from_us"])
@@ -190,7 +211,7 @@ class Store:
         rows = self.db.execute("SELECT body FROM events" + where + " ORDER BY time_us DESC,id DESC LIMIT ?", args + [query["limit"] + 1]).fetchall()
         events = [json.loads(row[0]) for row in rows[:query["limit"]]]
         next_cursor = {key: events[-1][key] for key in ("time_us", "id")} if len(rows) > query["limit"] else None
-        retained = dict(self.db.execute("SELECT count(*) AS count,min(time_us) AS from_us,max(time_us) AS to_us FROM events").fetchone())
+        retained = self.retained()
         return {"events": events, "next": next_cursor, "ceiling": ceiling,
                 "matching_count": count, "density": density, "retained": retained,
                 "from_us": query["from_us"], "to_us": query["to_us"],
@@ -217,6 +238,8 @@ class Store:
         view.update(id=uuid.uuid4().hex, label=redact(label, 100) or "Saved view",
                     window_minutes=integer(options.get("window_minutes", 5), "window_minutes", 1, 10080))
         view["search"] = redact(view["search"], 200)
+        view["unit"] = redact(view["unit"], 160)
+        view["exclude"] = [redact(term, 200) for term in view["exclude"]]
         views = self.saved_views()
         if len(views) >= 20:
             raise ValueError("saved view limit reached (20); remove one first")
@@ -374,7 +397,9 @@ class Store:
         with self.db:
             self.db.execute("INSERT OR REPLACE INTO settings VALUES(?,?)", (key, encode(value)))
 
-    def preview_export(self, ident, detail=False):
+    def preview_export(self, ident, detail=False, format="json"):
+        if format not in ("json", "markdown"):
+            raise ValueError("export format must be json or markdown")
         item = self.incident(ident)
         evidence = []
         for event in item["evidence"]:
@@ -384,19 +409,22 @@ class Store:
                 clean["message"] = redact(event["message"])
             evidence.append(clean)
         bundle = {"format": "chronicle-evidence-v1", "created_us": self.now(),
-                  "title": item["title"], "status": item["status"], "evidence": evidence,
+                  "title": item["title"], "status": item["status"], "revision": item["revision"], "evidence": evidence,
                   "notes": redact(item["notes"], 4096) if detail else "[excluded]",
                   "detail_included": bool(detail),
                   "caution": "Correlation is not causation. Redaction is best-effort: review before sharing. This is selected evidence, not complete system history."}
         body = json.dumps(bundle, indent=2, sort_keys=True, ensure_ascii=True) + "\n"
+        if format == "markdown":
+            from .report import markdown
+            body = markdown(bundle)
         if len(body.encode()) > 2 * 1024 * 1024:
             raise ValueError("export exceeds 2 MiB")
         token = uuid.uuid4().hex
         # Only the most recent preview is valid; bounds memory and avoids stale confirmations.
         expiry = self.now() + 300_000_000
-        self.previews = {token: (expiry, body, self.monotonic() + 300)}
+        self.previews = {token: (expiry, body, self.monotonic() + 300, ".md" if format == "markdown" else ".json")}
         return {"token": token, "text": body, "sha256": hashlib.sha256(body.encode()).hexdigest(),
-                "expires_us": expiry}
+                "expires_us": expiry, "format": format}
 
     def confirm_export(self, token):
         preview = self.previews.pop(token, None)
@@ -405,7 +433,7 @@ class Store:
         folder = private_dir(self.path / "exports")
         if len(list(folder.iterdir())) >= 32:
             raise ValueError("export limit reached (32); move old exports out first")
-        path = folder / ("chronicle-" + uuid.uuid4().hex + ".json")
+        path = folder / ("chronicle-" + uuid.uuid4().hex + preview[3])
         fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
         with os.fdopen(fd, "w", encoding="utf-8") as stream:
             stream.write(preview[1])

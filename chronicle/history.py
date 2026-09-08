@@ -23,7 +23,14 @@ def filters(data):
     search = data.get("search", "")
     if not isinstance(search, str) or len(search) > 200:
         raise ValueError("invalid search")
-    return {**result, "search": search}
+    unit = data.get("unit", "")
+    if not isinstance(unit, str) or len(unit) > 160:
+        raise ValueError("invalid unit")
+    exclude = data.get("exclude", [])
+    if not isinstance(exclude, list) or len(exclude) > 8 or any(
+            not isinstance(term, str) or not term.strip() or len(term) > 200 for term in exclude):
+        raise ValueError("use up to eight nonempty exclusion terms, each at most 200 characters")
+    return {**result, "search": search, "unit": unit, "exclude": exclude}
 
 
 def query(data):

@@ -6,7 +6,7 @@ never reads host sources. `--once` performs one collection, emits a closed-panel
 snapshot, then exits. Stdin EOF, SIGTERM, SIGINT or `shutdown` ends the helper.
 
 Input and output are one JSON object per line. Stdout contains protocol only.
-Input lines are limited at 16 KiB. Invalid, oversized and deeply nested commands
+Input lines are limited to 16 KiB. Invalid, oversized and deeply nested commands
 produce a safe error and do not authorize arbitrary execution.
 
 ```json
@@ -101,3 +101,50 @@ wall time/boot/monotonic fields remain unchanged. Backwards receipt-clock change
 can extend age retention; the hard event-count cap still applies. Older builds
 refuse schema 2 rather than resetting it. Back up private state before upgrading
 an installed recorder; do not run old and new helpers against one state directory.
+
+## Inspect surroundings and recurring events
+
+History and saved-view filters also accept `unit` (exact stored unit, at most
+160 characters, empty for all) and `exclude` (up to eight nonempty literal
+terms, each at most 200 characters). Any excluded term in message or unit
+hides that event from the result; nothing is deleted. Search and exclusions
+use Unicode case-folding, with no regex or wildcard syntax. Saved text is
+redacted before storage, so review restored filters.
+
+```json
+{"cmd":"context","id":"EXACT_EVENT_ID","scope":"unit","radius_seconds":120,"limit":30}
+{"cmd":"analyze","from_us":1800000000000000,"to_us":1800000299999999,"unit":"pipewire.service","exclude":["health check"],"sort":"change","limit":50}
+```
+
+Replace `EXACT_EVENT_ID` with a retained 32-character ID. Context accepts
+`scope: unit|all`, radius 1–3600 seconds, 1–100 neighbors per side and an optional
+receipt `ceiling`. Default unit scope matches source/unit/boot, not PID.
+Text, category and level filters do not carry over. The anchor is always included;
+neighbors are the closest by `(time_us,id)`, shown chronologically. Results give
+eligible and shown counts per side, `truncated`, `retained` and the receipt ceiling.
+An expired anchor returns an error, never a replacement.
+
+Analysis accepts the history interval/filters/ceiling, `sort: repeat|change`
+and limit 1–100 (default 50), but no page cursor. Previous range ends one
+microsecond before `from_us` and has the same inclusive duration. A range too
+close to the epoch returns a useful error instead of comparing unequal periods.
+Every matching retained row contributes, including rows beyond history page one.
+
+Groups use exact stored source/unit/boot/category/severity/message. Each returns
+current/previous counts, signed `delta`, state, current and previous first/last
+times, and an exact latest representative `event_id`. Results include both
+intervals, filters, group/event totals, omitted-group indication, retention
+generation and recorder notices counted independently of filters. Notice-free
+history still does not establish completeness. No observations are deduplicated
+by these queries; redaction can make distinct raw messages share stored text.
+
+## Preview a portable report
+
+`preview_export` accepts `format: json|markdown` (default JSON). Both formats use
+the same metadata-only default, optional `detail: true`, exact-byte preview,
+single-use five-minute token and 2 MiB maximum. The format and extension are
+bound to that token. Confirmation writes a private `.json` or `.md` file and
+returns its path and SHA-256. A new preview invalidates the previous one across
+all panels. The current incident revision is included; only committed notes
+are eligible. Markdown user content is indented literal text, not executable
+HTML, image syntax or links. No report is uploaded or copied to the clipboard.
