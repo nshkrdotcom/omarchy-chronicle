@@ -45,6 +45,14 @@ other warnings and failed imports are errors. This is not a zero-warning claim.
 - First GitHub Actions run `34172156337` passed all jobs: Python 3.11, Python
   3.14, and offscreen Qt (normal and 1.5× scale). Subsequent revisions must be
   checked independently; see the repository's Actions page for exact SHAs.
+- Acceptance refinement `4275429` also passed all jobs in run `34172900630`.
+  That run exposed Node 20 deprecation advisories in the older action pins.
+  The workflow was subsequently moved to verified full-SHA v7 pins from the
+  official [checkout](https://github.com/actions/checkout),
+  [setup-python](https://github.com/actions/setup-python), and
+  [setup-node](https://github.com/actions/setup-node) releases (Node 24 action
+  runtime), with bounded job timeouts. This does not change the Node 22 version
+  used to test Chronicle's pure JavaScript model.
 - The actual offscreen Quickshell-to-helper integration passed bookmark,
   incident creation, exact pin, metadata preview, export and graceful shutdown.
   An initial harness import used an invalid absolute QML URL; it was corrected
