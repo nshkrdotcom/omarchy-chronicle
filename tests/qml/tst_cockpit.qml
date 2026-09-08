@@ -84,6 +84,110 @@ TestCase {
         const actions = findChild(cockpit, "headerActions");
         verify(actions.x > title.x + title.width);
     }
+    function test_dialog_chrome_uses_popup_palette() {
+        var dialog = findChild(cockpit, "filterDialog");
+        dialog.showFilters("", []);
+        compare(dialog.header.color, Color.popups.text);
+        compare(dialog.header.background.color, Color.popups.background);
+        compare(dialog.footer.background.color, Color.popups.background);
+        dialog.close();
+    }
+    function test_filter_editor_validation_and_space_do_not_freeze() {
+        var dialog = findChild(cockpit, "filterDialog");
+        dialog.showFilters("", []);
+        var field = findChild(dialog, "exclusionInput");
+        field.forceActiveFocus();
+        keyClick(Qt.Key_Space);
+        verify(!cockpit.frozen);
+        field.text = "x\nx\nx\nx\nx\nx\nx\nx\nx";
+        verify(!findChild(dialog, "applyFilters").enabled);
+        field.text = "health\nrefresh";
+        verify(findChild(dialog, "applyFilters").enabled);
+        mouseClick(findChild(dialog, "applyFilters"));
+        compare(cockpit.exclusions.length, 2);
+        cockpit.applyView({});
+    }
+    function test_new_filters_are_restored_and_passed_to_history() {
+        cockpit.applyView({
+            unit: "pipewire.service",
+            exclude: ["health"],
+            window_minutes: 15
+        });
+        compare(cockpit.historyModel.options.unit, "pipewire.service");
+        compare(cockpit.historyModel.options.exclude[0], "health");
+        cockpit.applyView({});
+        compare(cockpit.historyModel.options.unit, "");
+        compare(cockpit.historyModel.options.exclude.length, 0);
+    }
+    function test_notes_outline_is_explicit_and_never_overwrites_work() {
+        cockpit.incidentEditor.adopt({
+            id: "outline",
+            title: "Test",
+            notes: "",
+            revision: 1,
+            status: "open",
+            evidence: []
+        });
+        verify(cockpit.insertNotesOutline());
+        verify(cockpit.incidentEditor.notes.indexOf("Observed facts") >= 0);
+        verify(cockpit.incidentEditor.dirty);
+        cockpit.incidentEditor.edit("My investigation");
+        verify(!cockpit.insertNotesOutline());
+        compare(cockpit.incidentEditor.notes, "My investigation");
+    }
+    function test_pin_from_context_preserves_exact_selected_identity() {
+        cockpit.incidentEditor.adopt({
+            id: "saved",
+            title: "Saved",
+            notes: "",
+            revision: 1,
+            status: "open",
+            evidence: []
+        });
+        cockpit.pinEvidence("exact-surrounding-id");
+        compare(sent[0].cmd, "pin");
+        compare(sent[0].args.id, "saved");
+        compare(sent[0].args.event_id, "exact-surrounding-id");
+        compare(cockpit.page, 2);
+    }
+    function test_context_preserves_timeline_filters_and_exact_anchor() {
+        cockpit.applyView({
+            severity: "error",
+            unit: "worker.service",
+            exclude: ["health"]
+        });
+        cockpit.showContext("exact-id", 42);
+        var dialog = findChild(cockpit, "contextDialog");
+        compare(dialog.queryModel.options.id, "exact-id");
+        compare(dialog.queryModel.options.ceiling, 42);
+        verify(dialog.queryModel.options.severity === undefined);
+        dialog.close();
+        compare(cockpit.severity, "error");
+        compare(cockpit.unitFilter, "worker.service");
+        compare(cockpit.exclusions[0], "health");
+        cockpit.applyView({});
+    }
+    function test_analysis_uses_accepted_range_filters_and_ceiling() {
+        cockpit.applyView({
+            unit: "worker.service",
+            exclude: ["health"]
+        });
+        cockpit.historyModel.result = {
+            events: [],
+            from_us: 600000000,
+            to_us: 900000000,
+            ceiling: 42
+        };
+        cockpit.showAnalysis();
+        var dialog = findChild(cockpit, "analysisDialog");
+        compare(dialog.options.from_us, 600000000);
+        compare(dialog.options.to_us, 900000000);
+        compare(dialog.options.ceiling, 42);
+        compare(dialog.options.exclude[0], "health");
+        verify(cockpit.frozen);
+        dialog.close();
+        cockpit.applyView({});
+    }
     function test_foreign_incident_response_cannot_replace_local_notes() {
         cockpit.incidentEditor.adopt({
             id: "local",
@@ -248,6 +352,12 @@ TestCase {
         wait(30);
         const rail = findChild(cockpit, "headerActions");
         verify(rail.x + rail.width <= cockpit.width + 1);
+        const patterns = findChild(cockpit, "patternsButton");
+        verify(patterns.mapToItem(cockpit, patterns.width, 0).x <= cockpit.width + 1);
+        cockpit.page = 2;
+        wait(20);
+        const remove = findChild(cockpit, "removeIncidentButton");
+        verify(remove.mapToItem(cockpit, remove.width, 0).x <= cockpit.width + 1);
         compare(findChild(cockpit, "chronicleTitle").font.pixelSize, Style.font.subtitle);
         test.width = 1280;
     }

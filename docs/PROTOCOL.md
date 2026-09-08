@@ -43,7 +43,7 @@ panels closed. The helper has one active live query, shared by its consumers.
 | `update_incident` | `id`, `notes`, `status: open/closed` | Save notes/status |
 | `pin` / `unpin` | `id`, `event_id` | Add/remove exact saved evidence copy |
 | `remove_incident` | `id`, `confirm: true` | Explicit permanent logical removal |
-| `preview_export` | `id`, `detail: bool` | Exact JSON text, token, SHA-256, expiry |
+| `preview_export` | `id`, `detail: bool`, `format: json\|markdown` | Exact reviewed text, token, SHA-256, expiry |
 | `confirm_export` | `token` | Write exact reviewed bytes; return path/hash |
 | `shutdown` | none | Graceful stop |
 

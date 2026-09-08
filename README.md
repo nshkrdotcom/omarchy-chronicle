@@ -7,7 +7,7 @@
 What changed just before this broke?
 
 Chronicle (`nshkr.chronicle`) is a local-first desktop incident flight recorder
-for Omarchy. It brings timestamped evidence, limited resource history,
+for Omarchy. It brings timestamped evidence, resource-pressure history,
 bookmarks, before/after comparisons, and saved investigations into one native
 panel. Correlation is not proof of causation.
 
@@ -30,6 +30,11 @@ do not enable it in a shared development session without coordinating first.
   queries per cockpit; receipt ceilings and explicit retention-loss warnings.
 - **Reuse investigations:** quick error/audio/network presets and up to 20
   named durable filter views, without saving stale page cursors.
+- **Read around an error:** inspect nearest earlier/later events with other
+  levels included, choose same-unit or all-source context, and pin exact evidence.
+- **Separate repetition from change:** count recurring stored messages across
+  the full interval, compare the preceding equal-duration window, and inspect
+  exact events. Temporary literal exclusions and exact-unit filters are reusable.
 - **Inspect pressure:** CPU, memory, and I/O PSI traces with actual scales,
   missing-data gaps, pointer inspection and keyboard sample stepping. PSI is
   time stalled, not resource utilization.
@@ -44,7 +49,8 @@ do not enable it in a shared development session without coordinating first.
 - **Protect human work:** separately acknowledged durable drafts, revision-checked
   note saves, explicit three-version conflict review, and saved-copy inspection.
 - **Share deliberately:** metadata-only export by default, opt-in messages and
-  notes, full exact-byte preview, expiring confirmation, private local JSON file.
+  notes, full exact-byte preview, expiring confirmation, private JSON or Markdown
+  handoffs. An optional notes outline helps separate facts from hypotheses.
   No upload, clipboard copy, or automatic remediation.
 - **Understand coverage:** source health, failed reads, cursor gaps, retention,
   pause state, data age, and disabled sources are visible.
@@ -69,7 +75,7 @@ make test          # Python + JS, isolated state and deterministic fixtures
 make test-qml      # Offscreen UI and stubbed service-controller tests
 make integration   # Real windowless Quickshell ↔ Python, synthetic data
 make lint          # Read-only resolution against packaged Omarchy imports
-make demo          # Four synthetic page screenshots in /tmp; no visible window
+make demo          # Synthetic page and investigation-dialog screenshots in /tmp
 make preview       # Refresh the titlebar-free full-panel README preview.png
 make soak          # 60-second synthetic helper soak, 50 panel-state cycles
 make live-readonly # Optional one-shot real source read with temporary state
@@ -102,7 +108,7 @@ Persistent state defaults to `$XDG_STATE_HOME/nshkr.chronicle`, or
 `~/.local/state/nshkr.chronicle` when unset/relative. Recording continues while
 the panel is closed. Pause stops source collection; it does not erase history.
 
-Messages are limited and redacted before persistence, but generic redaction
+Messages have size caps and are redacted before persistence, but generic redaction
 cannot recognize every secret. Review all exports before sharing. The journal's
 `_HOSTNAME` and `_CMDLINE` fields, other unselected fields, and raw journal objects
 are not persisted. Message text and identifiers may still reveal hostnames or
@@ -110,6 +116,7 @@ other private context. Existing journal files are never modified.
 
 See [privacy and source coverage](docs/PRIVACY-AND-SOURCES.md),
 [operator workflows](docs/OPERATOR-GUIDE.md), and [security reporting](SECURITY.md).
+For a complete investigation, follow [find an error and hand off the evidence](docs/INVESTIGATE-AND-HANDOFF.md).
 
 ## Acceptance and contributing
 
@@ -124,6 +131,10 @@ installation and human-in-the-loop polish process; installation remains deferred
 The [implementation plan](docs/IMPLEMENTATION-PLAN.md) records research,
 architecture and TDD milestones. See [contributing](CONTRIBUTING.md) before
 working on the plugin.
+
+The [community-needs plan](docs/COMMUNITY-PLAN.md) explains the research and TDD
+priorities. [The stable-point handoff](docs/COMMUNITY-HANDOFF.md) records the latest
+implementation and the remaining installation/acceptance work.
 
 ## License
 

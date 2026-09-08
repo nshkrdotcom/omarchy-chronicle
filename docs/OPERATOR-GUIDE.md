@@ -8,7 +8,8 @@ acceptance are pending; see [the release gate](RELEASE-GATE.md).
 1. Open Timeline. Start at 5m and widen the window if the event is older.
 2. Search for an application, service, or phrase. Search is literal, not a
    regular expression. Live search queries retained history; the view shows
-   the newest 500 matching records. Time-window filtering then applies locally.
+   200 matches per page after applying the interval and filters. Older/Newer
+   traverses the rest; the density strip counts the whole matching interval.
 3. Cycle severity, category, and source controls to focus the evidence.
 4. Select a timeline marker or row. Its exact recorded identity is inspected.
    Selection and scrolling freeze the view; collection continues in the service.
@@ -20,7 +21,8 @@ acceptance are pending; see [the release gate](RELEASE-GATE.md).
    is unavailable, not zero; delayed samples break the line.
 
 Selecting **Live** releases the frozen view and refreshes the retained-history
-query. Frozen search only filters the captured evidence set. The recorder can
+query. Frozen search queries retained evidence within the frozen interval and
+receipt ceiling; retention can still remove records. The recorder can
 outlive the panel, but it cannot collect while Omarchy/the helper is stopped.
 
 ## Compare a deliberate change
@@ -55,7 +57,8 @@ cursors and boot identifiers. The title, units, timestamps, categories,
 severity and selected event identities remain visible and can be sensitive.
 
 If messages/notes are necessary, opt in and open Preview export. Review all
-the displayed JSON. The save action writes **exactly those reviewed bytes**
+the displayed text. Choose JSON for structured data or Markdown for a readable
+handoff. The save action writes **exactly those reviewed bytes**
 to a unique private file in the state's `exports` directory. Confirmation is
 single-use and expires after five minutes; opening a new preview invalidates
 the old one. Later incident edits do not mutate an already-previewed bundle.
@@ -92,7 +95,7 @@ normal typing so spaces in a search/notes do not freeze the cockpit.
 Closing the panel is not pausing the recorder. Header fonts and top-right
 action alignment are shared across invocation routes; no overlay alternative
 exists. Styling derives from Omarchy's native popup and font tokens.
-# Historical exploration and saved views
+## Historical exploration and saved views
 
 ## Notes that survive investigation switches
 
@@ -134,3 +137,12 @@ Pin important events to an incident to retain copies.
 named durable filters. It saves search, source/category/severity and window
 length, not the page or historical anchor. Saved labels/search are redacted:
 review restored text if a search looked like a secret.
+
+Views also save exact-unit filters and excluded phrases. **Filters** lets you
+hide known noise temporarily, and **Patterns** compares complete matching counts
+with the previous equal-duration interval. **Surrounding events** beside selected
+evidence lifts text/level restrictions in a separate dialog without changing
+your Timeline. You can inspect and pin any of its exact rows.
+
+For step-by-step examples, interpretation, undo actions and troubleshooting,
+see [Find an error and hand off the evidence](INVESTIGATE-AND-HANDOFF.md).

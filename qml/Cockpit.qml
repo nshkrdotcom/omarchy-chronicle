@@ -24,12 +24,15 @@ FocusScope {
     property string severity: "all"
     property string category: "all"
     property string sourceFilter: "all"
+    property string unitFilter: ""
+    property var exclusions: []
     property string pressureMetric: "cpu_some_avg10"
     property string bookmarkA: ""
     property string bookmarkB: ""
     property string incidentId: ""
     property string confirmationId: ""
     property bool detailedExport: false
+    property string exportFormat: "json"
     readonly property var live: service ? service.snapshot : ({})
     readonly property var view: frozen ? frozenSnapshot : live
     readonly property real endUs: anchorUs > 0 ? anchorUs : browser.result ? Number(browser.result.to_us) : nowUs
@@ -85,7 +88,9 @@ FocusScope {
             search: search.text,
             severity: severity,
             category: category,
-            source: sourceFilter
+            source: sourceFilter,
+            unit: unitFilter,
+            exclude: exclusions
         }, frozen ? browser.ceiling : null);
     }
     function jumpTo(timeUs) {
@@ -106,6 +111,8 @@ FocusScope {
         severity = item.severity || "all";
         category = item.category || "all";
         sourceFilter = item.source || "all";
+        unitFilter = item.unit || "";
+        exclusions = item.exclude || [];
         windowMinutes = item.window_minutes || 5;
         page = 0;
         updateQuery();
@@ -114,6 +121,45 @@ FocusScope {
     onSeverityChanged: updateQuery()
     onCategoryChanged: updateQuery()
     onSourceFilterChanged: updateQuery()
+    onUnitFilterChanged: updateQuery()
+    onExclusionsChanged: updateQuery()
+    function showContext(id, ceiling) {
+        contextDialog.showEvent(id, ceiling);
+    }
+    function pinEvidence(id) {
+        if (editor.busy)
+            return;
+        if (incidentId)
+            request("pin", {
+                id: incidentId,
+                event_id: id
+            });
+        else
+            request("create_incident", {
+                title: "Investigation",
+                pin_event_id: id
+            });
+        contextDialog.close();
+        analysisDialog.close();
+        page = 2;
+    }
+    function showAnalysis() {
+        if (!browser.result)
+            return;
+        if (!frozen)
+            toggleFreeze();
+        analysisDialog.showAnalysis(Object.assign({}, browser.options, {
+            from_us: browser.result.from_us,
+            to_us: browser.result.to_us,
+            ceiling: browser.result.ceiling
+        }));
+    }
+    function insertNotesOutline() {
+        if (!editor.item || editor.notes !== "" || editor.busy)
+            return false;
+        editor.edit("Impact\nWhat stopped working, and when?\n\nObserved facts\nRecord evidence IDs and times.\n\nHypotheses\nSeparate possibilities from confirmed facts.\n\nActions and results\nWhat did you try, and what happened?\n\nNext steps\nWho will verify what, and when?");
+        return true;
+    }
     onViewActiveChanged: {
         if (viewActive && !frozen)
             updateQuery();
@@ -142,6 +188,37 @@ FocusScope {
     }
     Component.onCompleted: if (viewActive)
         updateQuery()
+    FilterDialog {
+        id: filterDialog
+        objectName: "filterDialog"
+        anchors.centerIn: parent
+        selectedUnit: root.selectedEvent ? root.selectedEvent.unit : ""
+        onApplied: function (unit, exclude) {
+            root.unitFilter = unit;
+            root.exclusions = exclude;
+            root.updateQuery();
+        }
+    }
+    ContextDialog {
+        id: contextDialog
+        objectName: "contextDialog"
+        anchors.centerIn: parent
+        service: root.service
+        pinEnabled: !editor.busy
+        pinLabel: root.incidentId ? "Pin selected to incident" : "Create incident + pin selected"
+        onPin: function (eventId) {
+            root.pinEvidence(eventId);
+        }
+    }
+    AnalysisDialog {
+        id: analysisDialog
+        objectName: "analysisDialog"
+        anchors.centerIn: parent
+        service: root.service
+        onInspect: function (eventId, ceiling) {
+            root.showContext(eventId, ceiling);
+        }
+    }
     Connections {
         target: root.service
         ignoreUnknownSignals: true
@@ -339,6 +416,19 @@ FocusScope {
                         font.pixelSize: Style.font.caption
                     }
                     ChronicleButton {
+                        objectName: "filtersButton"
+                        text: "Filters" + (root.unitFilter || root.exclusions.length ? " · " + ((root.unitFilter ? 1 : 0) + root.exclusions.length) : "")
+                        chosen: !!root.unitFilter || root.exclusions.length > 0
+                        onClicked: filterDialog.showFilters(root.unitFilter, root.exclusions)
+                    }
+                    ChronicleButton {
+                        objectName: "patternsButton"
+                        text: "Patterns"
+                        enabled: !!browser.result && !browser.busy
+                        hint: "Count recurring events and compare the previous interval"
+                        onClicked: root.showAnalysis()
+                    }
+                    ChronicleButton {
                         text: "Views"
                         onClicked: viewsDialog.open()
                     }
@@ -487,6 +577,11 @@ FocusScope {
                                 wrapMode: Text.WrapAnywhere
                                 font.pixelSize: Style.font.caption
                                 text: root.selectedEvent ? "Time: " + Model.timestamp(root.selectedEvent.time_us) + "\nSource: " + root.selectedEvent.source + "\nUnit: " + root.selectedEvent.unit + "\nBoot: " + (root.selectedEvent.boot || "not recorded") + "\nMonotonic µs: " + (root.selectedEvent.monotonic_us === null ? "unavailable" : root.selectedEvent.monotonic_us) + "\nID: " + root.selectedEvent.id : ""
+                            }
+                            ChronicleButton {
+                                text: "Surrounding events"
+                                enabled: !!root.selectedEvent
+                                onClicked: root.showContext(root.selectedId, browser.ceiling)
                             }
                             ChronicleButton {
                                 text: root.incidentId ? "Pin to selected incident" : "Create incident + pin"
@@ -667,6 +762,13 @@ FocusScope {
                     }
                     RowLayout {
                         ChronicleButton {
+                            objectName: "notesOutlineButton"
+                            text: "Notes outline"
+                            enabled: !!root.currentIncident && !editor.busy && editor.notes === ""
+                            hint: "Insert prompts into empty notes; review and save explicitly"
+                            onClicked: root.insertNotesOutline()
+                        }
+                        ChronicleButton {
                             text: "Save notes"
                             enabled: !!root.currentIncident && !editor.busy && !editor.conflict
                             onClicked: editor.save(root.currentIncident.status)
@@ -689,6 +791,7 @@ FocusScope {
                         ChronicleButton {
                             text: "Remove"
                             enabled: !!root.currentIncident && !editor.busy
+                            objectName: "removeIncidentButton"
                             onClicked: {
                                 root.confirmationId = "incident:" + root.incidentId;
                                 confirmDialog.open();
@@ -739,6 +842,12 @@ FocusScope {
                     }
                     RowLayout {
                         ChronicleButton {
+                            objectName: "exportFormatButton"
+                            text: root.exportFormat === "json" ? "JSON" : "Markdown"
+                            hint: "Choose a structured JSON file or readable Markdown handoff"
+                            onClicked: root.exportFormat = root.exportFormat === "json" ? "markdown" : "json"
+                        }
+                        ChronicleButton {
                             text: root.detailedExport ? "Messages + notes included" : "Metadata only"
                             chosen: root.detailedExport
                             onClicked: root.detailedExport = !root.detailedExport
@@ -749,7 +858,8 @@ FocusScope {
                             hint: editor.dirty ? "Commit or discard the draft before a detailed export. Metadata excludes notes." : "Review committed evidence only"
                             onClicked: root.request("preview_export", {
                                 id: root.incidentId,
-                                detail: root.detailedExport
+                                detail: root.detailedExport,
+                                format: root.exportFormat
                             })
                         }
                     }
@@ -828,7 +938,7 @@ FocusScope {
         interval: 250
         onTriggered: root.updateQuery()
     }
-    Dialog {
+    ChronicleDialog {
         id: jumpDialog
         title: "Jump to an exact moment"
         modal: true
@@ -870,7 +980,7 @@ FocusScope {
             }
         }
     }
-    Dialog {
+    ChronicleDialog {
         id: viewsDialog
         title: "Investigation views"
         modal: true
@@ -941,6 +1051,8 @@ FocusScope {
                         severity: root.severity,
                         category: root.category,
                         source: root.sourceFilter,
+                        unit: root.unitFilter,
+                        exclude: root.exclusions,
                         window_minutes: root.windowMinutes
                     })
                 }
@@ -981,7 +1093,7 @@ FocusScope {
             }
         }
     }
-    Dialog {
+    ChronicleDialog {
         id: confirmDialog
         title: "Remove saved item?"
         modal: true
@@ -1009,7 +1121,7 @@ FocusScope {
                 root.incidentId = "";
         }
     }
-    Dialog {
+    ChronicleDialog {
         id: discardDialog
         title: "Discard this draft?"
         modal: true
@@ -1029,7 +1141,7 @@ FocusScope {
         }
         onAccepted: editor.discard()
     }
-    Dialog {
+    ChronicleDialog {
         id: reviewDialog
         title: "Review latest incident · resolve explicitly"
         modal: true
@@ -1078,7 +1190,7 @@ FocusScope {
             }
         }
     }
-    Dialog {
+    ChronicleDialog {
         id: evidenceDialog
         title: "Saved evidence copy · retained independently"
         modal: true
@@ -1101,7 +1213,7 @@ FocusScope {
             }
         }
     }
-    Dialog {
+    ChronicleDialog {
         id: exportDialog
         objectName: "exportDialog"
         title: "Review exact export · no upload"

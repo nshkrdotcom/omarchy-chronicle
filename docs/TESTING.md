@@ -37,7 +37,20 @@ other warnings and failed imports are errors. This is not a zero-warning claim.
 
 ## Observed results
 
-### Investigation-workflow tranche (current production checkpoint `9e9e417`)
+### Community-driven stable point
+
+The source milestone passes 94 Python tests, 13 JS tests and 65 Qt cases at
+both 1× and 1.5×. Real isolated transport now covers context, comparison and both
+export formats. Native imports resolve with 151 retained host/dynamic advisories.
+Plugin validation and the regenerated full-client preview pass. The synthetic
+60.01-second helper soak completed 50 panel-state cycles with 23168 KiB peak RSS,
+8/8/8 baseline/final/max-ready FDs, zero growth and 0.07 CPU seconds.
+
+See [the stable-point handoff](COMMUNITY-HANDOFF.md) for exact commits/CI,
+RED/GREEN evidence, local report paths and installation/human acceptance limits.
+No installed desktop was modified. Source development is paused by request.
+
+### Earlier investigation-workflow tranche (checkpoint `9e9e417`)
 
 - 76 Python tests, 13 JavaScript tests, 51 offscreen Qt cases (including
   lifecycle cases) pass. The same QML implementation passes at 1× and 1.5×.

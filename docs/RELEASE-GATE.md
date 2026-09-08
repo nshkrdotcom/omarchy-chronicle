@@ -13,6 +13,9 @@ installation/HITL runbook. The new history/draft workflow additionally requires:
 - acknowledged drafts, concurrent revision/token conflicts and explicit review;
 - committed-only exports and independently inspectable retained pin copies;
 - titlebar-free README preview remains labeled synthetic until installed review.
+- context with mixed levels, same-unit/all-source scope, dense bursts and pinning;
+- saved exclusions, full-interval repeat counts and equal-window changes;
+- Markdown/JSON exact-preview export, notes outline and dialog palette consistency.
 
 ## Preconditions
 

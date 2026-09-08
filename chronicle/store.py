@@ -240,6 +240,7 @@ class Store:
         view["search"] = redact(view["search"], 200)
         view["unit"] = redact(view["unit"], 160)
         view["exclude"] = [redact(term, 200) for term in view["exclude"]]
+        filters(view)  # Cleaning must not persist an empty, unusable exclusion.
         views = self.saved_views()
         if len(views) >= 20:
             raise ValueError("saved view limit reached (20); remove one first")

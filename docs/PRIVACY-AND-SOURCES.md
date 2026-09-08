@@ -51,6 +51,9 @@ text is plain text, never treated as rich text or a command.
 | Database | 8192 SQLite pages (32 MiB at the created 4-KiB page size) |
 | History query result | 200 default / 500 maximum per page; time bounds before limit; stable keyset continuation |
 | Density summary | 48 bins over all matching retained events in the requested interval |
+| Context | Closest 30 neighbors per side in the UI; API maximum 100 per side plus anchor; radius 1–3600 seconds |
+| Pattern comparison | Full retained-interval counts; UI shows highest-ranked 50 groups; API maximum 100 |
+| Filter exclusions | Eight literal phrases, 200 characters each; exact-unit filter 160 characters |
 | Pending UI requests | 32; 30-second acknowledgement timeout |
 | Export preview | One, five-minute lifetime, 2-MiB byte limit |
 | Export files | 32, unique names, no automatic overwrite |
@@ -88,6 +91,18 @@ not cryptographically authenticated and is not a forensic chain of custody.
 Export hashes describe bytes, not source authenticity. Export has no network
 path. Metadata can still reveal service names and activity times. Test and
 preview assets use synthetic data only; CI never receives real journal data.
+
+Context and pattern tools read the existing store only. Exclusions hide rows
+from queries, never from storage or saved pins. Pattern groups use exact stored
+source/unit/boot/category/severity/message; redaction can make originally distinct
+messages look identical. Individual evidence IDs are never merged or deleted.
+Equal-window comparisons do not establish completeness or recovery. Recorder
+notices are counted independently of filters, but their absence proves neither.
+
+Markdown and JSON share the same privacy defaults and exact-preview confirmation.
+Only committed notes can be included. Markdown places operator/source content
+inside literal text blocks, so embedded HTML, image syntax and links are not
+active in a CommonMark renderer. Review metadata as well as optional details.
 
 Deletion is logical cleanup, not secure erasure. Saved copies are intentionally
 independent of ordinary retention. Pause/disable does not purge prior data.

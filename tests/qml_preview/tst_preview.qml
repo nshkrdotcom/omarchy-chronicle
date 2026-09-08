@@ -166,4 +166,77 @@ TestCase {
         grabImage(test).save(path);
         console.log("Fixture screenshot: " + path);
     }
+    function test_tools_data() {
+        return [
+            {
+                tag: "context"
+            },
+            {
+                tag: "patterns"
+            },
+            {
+                tag: "filters"
+            }
+        ];
+    }
+    function test_tools(data) {
+        cockpit.page = 0;
+        var dialog;
+        if (data.tag === "context") {
+            cockpit.showContext("event-40", 45);
+            dialog = findChild(cockpit, "contextDialog");
+            dialog.queryModel.result = {
+                anchor: fake.snapshot.events[4],
+                events: fake.snapshot.events.slice(0, 15).reverse(),
+                shown_before: 10,
+                before_count: 10,
+                shown_after: 4,
+                after_count: 4
+            };
+        } else if (data.tag === "patterns") {
+            dialog = findChild(cockpit, "analysisDialog");
+            dialog.showAnalysis({
+                from_us: test.baseUs - 300000000,
+                to_us: test.baseUs,
+                severity: "all",
+                source: "demo",
+                exclude: []
+            });
+            dialog.queryModel.result = {
+                from_us: test.baseUs - 300000000,
+                to_us: test.baseUs,
+                previous_from_us: test.baseUs - 600000001,
+                previous_to_us: test.baseUs - 300000001,
+                current_count: 45,
+                previous_count: 9,
+                group_count: 5,
+                recorder_notices: 1,
+                retained: {
+                    from_us: test.baseUs - 600000000,
+                    to_us: test.baseUs
+                },
+                caution: "Counts describe retained observations, not complete system activity. Zero observations do not prove recovery. Exact stored text may match after redaction.",
+                groups: fake.snapshot.events.slice(0, 5).map(function (e, i) {
+                    return Object.assign({}, e, {
+                        current: 9,
+                        previous: i === 0 ? 9 : 0,
+                        delta: i === 0 ? 0 : 9,
+                        state: i === 0 ? "unchanged" : "newly observed",
+                        first_us: test.baseUs - 250000000,
+                        last_us: e.time_us,
+                        event_id: e.id
+                    });
+                })
+            };
+        } else {
+            dialog = findChild(cockpit, "filterDialog");
+            dialog.showFilters("pipewire.service", ["health check", "periodic refresh"]);
+        }
+        wait(100);
+        dialog.queryModel && (dialog.queryModel.requestId = "");
+        var path = "/tmp/chronicle-fixture-" + data.tag + "-" + Date.now() + ".png";
+        grabImage(test).save(path);
+        console.log("Fixture screenshot: " + path);
+        dialog.close();
+    }
 }

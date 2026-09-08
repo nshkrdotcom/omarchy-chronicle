@@ -3,6 +3,10 @@
 Chronicle remains **uninstalled and not natively accepted** in this development
 session. Detailed machine-specific plan and handoff live at:
 
+- `~/Documents/Chronicle/2026-09-07-community-stable-handoff.md` — start here;
+  source work is paused at the operator's request, not awaiting more features.
+- `~/Documents/Chronicle/2026-09-07-community-needs-plan.md`
+
 - `~/Documents/Chronicle/2026-09-07-operator-investigation-plan.md`
 - `~/Documents/Chronicle/2026-09-07-installation-HITL-handoff.md`
 - `~/Documents/Chronicle/2026-09-07-completion-report.md`
@@ -21,3 +25,5 @@ Keep the native subtitle-sized heading and the existing top-right action rail.
 Every fix should start with a failing test and end with pushed green CI plus
 appropriate human acceptance. Do not mark the plugin “100% polished” while any
 required native/human acceptance is still pending.
+
+The portable copy of the latest handoff is [COMMUNITY-HANDOFF.md](COMMUNITY-HANDOFF.md).

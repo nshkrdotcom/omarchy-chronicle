@@ -26,7 +26,7 @@ def context(store, ident, scope="unit", radius_seconds=120, limit=30, ceiling=No
     where = " WHERE seq<=? AND time_us>=? AND time_us<=?"
     args = [ceiling, start, end]
     if scope == "unit":
-        where += " AND source=? AND json_extract(body,'$.unit')=? AND json_extract(body,'$.boot')=?"
+        where += " AND source=? AND json_extract(body,'$.unit')=? AND json_extract(body,'$.boot') IS ?"
         args += [anchor["source"], anchor["unit"], anchor["boot"]]
     counts, sides = [], []
     for operator, direction in (("<", "DESC"), (">", "ASC")):

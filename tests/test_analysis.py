@@ -91,6 +91,19 @@ class AnalysisTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.store.context(event["id"])
 
+    def test_context_with_missing_boot_retains_recorder_neighbors(self):
+        before = self.store.record("Paused")
+        self.now += 1
+        anchor = self.store.record("Resumed")
+        context = self.store.context(anchor["id"])
+        self.assertEqual(context["before_count"], 1)
+        self.assertEqual(context["events"][0]["id"], before["id"])
+
+    def test_saved_view_cannot_become_invalid_after_redaction(self):
+        with self.assertRaises(ValueError):
+            self.store.save_view("Empty after cleaning", {"exclude": ["\x1b[31m"]})
+        self.assertEqual(self.store.saved_views(), [])
+
     def test_analysis_counts_full_intervals_and_keeps_distinct_groups(self):
         current = [self.event(1000 + i % 100) for i in range(650)]
         previous = [self.event(900 + i % 100) for i in range(80)]

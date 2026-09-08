@@ -19,7 +19,7 @@ with tempfile.TemporaryDirectory(prefix="chronicle-transport-") as directory:
     runtime.mkdir(mode=0o700)
     service_copy = work / "service"
     service_copy.mkdir()
-    for filename in ("Service.qml", "HistoryController.qml", "IncidentController.qml"):
+    for filename in ("Service.qml", "HistoryController.qml", "IncidentController.qml", "InvestigationController.qml"):
         shutil.copyfile(root / "qml" / filename, service_copy / filename)
     template = (root / "tests/fixtures/service-harness.qml.in").read_text()
     for key, value in {"@QML_ROOT@": service_copy.as_uri(), "@REPO_ROOT@": str(root), "@STATE_ROOT@": str(work / "state")}.items():
@@ -55,10 +55,16 @@ with tempfile.TemporaryDirectory(prefix="chronicle-transport-") as directory:
     assert len(evidence["evidence"]) == 1
     assert evidence["detail_included"] is False
     assert not any("message" in event for event in evidence["evidence"])
+    reports = list((work / "state/exports").glob("*.md"))
+    assert len(reports) == 1
+    report = reports[0].read_text()
+    assert "# Chronicle incident handoff" in report
+    assert "Verified committed investigation notes" in report
+    assert "## Selected evidence" in report
     with closing(sqlite3.connect(work / "state/chronicle.sqlite3")) as db:
         incident = json.loads(db.execute("SELECT body FROM incidents").fetchone()[0])
         assert incident["notes"] == "Verified committed investigation notes"
         assert incident["revision"] == 3
         assert db.execute("SELECT count(*) FROM drafts").fetchone()[0] == 0
         assert len(json.loads(db.execute("SELECT body FROM settings WHERE key='saved_views'").fetchone()[0])) == 1
-    print("PASS: real offscreen Quickshell → paged history → bookmark → incident → pin → draft → revision-checked commit → saved view → metadata preview/export → clean shutdown. Synthetic data only.")
+    print("PASS: real offscreen Quickshell → paged history → bookmark → incident → pin → draft → revision-checked commit → saved view → JSON export → context → comparison → Markdown export → clean shutdown. Synthetic data only.")
