@@ -20,6 +20,18 @@ def process_metrics(pid):
     return {"rss_kib": rss, "fds": len(list((proc / "fd").iterdir())), "cpu_seconds": cpu}
 
 
+def summarize(samples):
+    ready = [row for row in samples if row.get("ready")]
+    if not ready:
+        return {"within_bounds":False,"reason":"no post-command readiness baseline"}
+    peak = max(row["rss_kib"] for row in samples)
+    growth = ready[-1]["fds"]-ready[0]["fds"]
+    return {"peak_rss_kib":peak,"fd_growth":growth,"baseline_fds":ready[0]["fds"],
+            "final_fds":ready[-1]["fds"],"max_ready_fds":max(row["fds"] for row in ready),
+            "cpu_seconds":ready[-1]["cpu_seconds"],
+            "within_bounds":peak < 96*1024 and growth <= 0}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--seconds", type=int, default=60)
@@ -57,20 +69,25 @@ def main():
                                 frames += 1
                                 if message.get("storage_error"):
                                     raise RuntimeError("storage error during soak")
-                    measures.append(process_metrics(child.pid))
+                    # First snapshot precedes creation of the stdin selector in
+                    # the daemon. A command-response snapshot proves that its
+                    # steady-state descriptors have been established.
+                    measures.append(process_metrics(child.pid) | {"ready":frames>=2})
                 child.stdin.write(b'{"cmd":"shutdown"}\n')
                 child.stdin.flush()
                 child.communicate(timeout=5)
             elapsed = time.monotonic()-started
-            peak = max(row["rss_kib"] for row in measures)
-            fd_growth = measures[-1]["fds"]-measures[0]["fds"]
-            assert child.returncode == 0 and toggles == 100
-            assert peak < 96*1024 and fd_growth <= 0
-            print(json.dumps({"result":"pass", "scope":"synthetic Python helper only", "seconds":round(elapsed,2),
-                              "panel_state_cycles":toggles//2, "snapshots":frames,
-                              "peak_rss_kib":peak, "fd_growth":fd_growth,
-                              "cpu_seconds":measures[-1]["cpu_seconds"],
-                              "native_compositor_acceptance":False}))
+            summary = summarize(measures)
+            passed = child.returncode == 0 and toggles == 100 and summary["within_bounds"]
+            report = summary | {"result":"pass" if passed else "fail", "scope":"synthetic Python helper only",
+                                "seconds":round(elapsed,2),"panel_state_cycles":toggles//2,"snapshots":frames,
+                                "first_samples":measures[:8],"native_compositor_acceptance":False}
+            with tempfile.NamedTemporaryFile(mode="w",prefix="chronicle-soak-report-",suffix=".json",delete=False) as output:
+                json.dump(report,output,indent=2)
+                report["report_path"] = output.name
+            print(json.dumps(report),flush=True)
+            if not passed:
+                raise SystemExit("Synthetic soak failed; measurements were preserved in the report above.")
         finally:
             if child.poll() is None:
                 os.killpg(child.pid,signal.SIGTERM)

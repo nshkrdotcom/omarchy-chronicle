@@ -37,7 +37,7 @@ other warnings and failed imports are errors. This is not a zero-warning claim.
 
 ## Observed results
 
-- Final local suite at the acceptance refinement stage: 46 Python tests, 11
+- Final local suite at the acceptance refinement stage: 48 Python tests, 11
   JavaScript tests, and 27 Qt cases including init/cleanup cases. All pass;
   the Qt suite also passes at 1.5× scale. Real transport integration and native
   import resolution are independent checks, not counted as unit tests.
@@ -67,6 +67,15 @@ other warnings and failed imports are errors. This is not a zero-warning claim.
 - The 60-second synthetic helper soak passed in 60.10 seconds with 50 panel-state
   cycles, 112 snapshots, 22,976 KiB peak RSS, zero FD growth, and 0.07 CPU seconds.
   It used demo data, not host journal traffic. This is not a native 10-minute soak.
+- A repeat against `50bd5a2` failed the harness's combined RSS/FD assertion.
+  That harness did not print the failed measurements, so the exact threshold
+  cannot be recovered or attributed retrospectively. Review found it could
+  baseline FDs before the helper created its stdin selector. The corrected
+  harness waits for a command-response snapshot before the steady-state FD
+  baseline, retains the same zero-growth/96-MiB limits, and preserves numeric
+  reports on both pass and fail. Regression tests cover premature baselines,
+  actual FD growth and absent readiness. This failed attempt is not erased by
+  a successful retry; the original incomplete failure report is a limitation.
 - Fixture previews of Timeline, Bookmarks, Incidents and Sources were inspected.
   Follow-up refinements included left-aligned event rows, native notes styling,
   readable comparisons, only relevant search controls, pressure lenses and
