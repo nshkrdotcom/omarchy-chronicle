@@ -114,6 +114,9 @@ from the [installed release gate](docs/RELEASE-GATE.md). CI exercises Python
 3.11/3.14, Node 22, and offscreen Qt at 1× and 1.5×. It does not prove Wayland
 placement, monitor hotplug, or real popup coordination.
 
+The [continuation handoff](docs/CONTINUATION.md) describes the coordinated
+installation and human-in-the-loop polish process; installation remains deferred.
+
 The [implementation plan](docs/IMPLEMENTATION-PLAN.md) records research,
 architecture and TDD milestones. See [contributing](CONTRIBUTING.md) before
 working on the plugin. MIT © 2026 nshkrdotcom.

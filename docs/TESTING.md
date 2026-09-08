@@ -37,6 +37,54 @@ other warnings and failed imports are errors. This is not a zero-warning claim.
 
 ## Observed results
 
+### Investigation-workflow tranche (current production checkpoint `9e9e417`)
+
+- 76 Python tests, 13 JavaScript tests, 51 offscreen Qt cases (including
+  lifecycle cases) pass. The same QML implementation passes at 1× and 1.5×.
+- Real isolated Quickshell transport exercises the actual history and incident
+  controllers through paging, mark, create/pin, durable draft, revision-checked
+  commit, saved view, metadata preview/export and owned helper shutdown.
+- Native imports resolve with 118 retained host/dynamic advisories;
+  `omarchy plugin validate /home/home/src/omarchy-chronicle` succeeds read-only.
+- `make preview` renders a 1280×840 synthetic full client area with no OS
+  titlebar, referenced near the top of README. PNG dimensions/link placement
+  are regression-tested. The native title/font/header rail remains unchanged.
+- Final helper soak at `9e9e417`: 60.10 seconds, 50 panel-state cycles, 112
+  snapshots, **23,156 KiB peak RSS**, baseline/final/max-ready FDs **8/8/8**,
+  zero FD growth, 0.07 CPU seconds. Report:
+  `/tmp/chronicle-soak-report-00v5e2mn.json`. An earlier pass before the Unicode
+  fix had 23,228 KiB peak RSS with the same zero-growth/CPU/cycle outcomes:
+  `/tmp/chronicle-soak-report-2u9e4c3h.json`. Neither is native compositor acceptance.
+- Green CI milestones: `b47f580` / `34173873427`, `b9117a1` / `34173971222`,
+  `2c2d08c` / `34174195586`, `f16a617` / `34174542005`,
+  `b6a1573` / `34174761058`, and production `9e9e417` / `34174875975`.
+  All three jobs on that production run succeeded. Check later docs revisions
+  independently rather than transferring a green status between SHAs.
+
+New RED/GREEN evidence covers the old 500-before-window bug, future-clock
+retention eviction, tied-time paging, receipt ceilings, mutation-free history
+queries, full-interval aggregates, schema migration failure rollback, persisted
+view limits, cross-cockpit replies, draft overwrite/version races, late stage
+acknowledgements, typing spaces in notes, committed-only export, source provenance,
+explicit timezone jumps, and chart axes moving ahead of returned data.
+
+Adversarial Unicode tests reproduced an additional actual recorder exception:
+escaped JSON could exceed the store's 12,000-byte event budget even after the
+message character cap. Normalization now fits that same byte budget, visibly
+shortens text where possible, and lets the source adapter qualify unpersistable
+identity as rejected/gap evidence instead of crashing collection.
+
+The expanded fixture harness initially rendered an empty loading state because
+it lacked a history reply; it now supplies the correct bounded model and asserts
+loaded evidence/selection before capture. Native lint rejected unqualified
+delegate access in the new graphic, corrected with explicit IDs. The expanded
+transport harness initially omitted the new controller copies, corrected before
+the successful real transport run. Python 3.14 also revealed unclosed database
+connections in new test/inspection code; those now use explicit closing scopes.
+These development failures are recorded, not relabeled as installed failures.
+
+### Earlier foundation results (retained for provenance)
+
 - Final local suite at the acceptance refinement stage: 48 Python tests, 11
   JavaScript tests, and 27 Qt cases including init/cleanup cases. All pass;
   the Qt suite also passes at 1.5× scale. Real transport integration and native

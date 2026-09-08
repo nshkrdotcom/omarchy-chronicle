@@ -4,6 +4,16 @@ This gate has **not** been executed. Another agent owns active installed
 Omarchy/plugin work. Do not run it implicitly from a build target, test,
 automation hook or unattended continuation.
 
+The [continuation guide](CONTINUATION.md) locates the detailed machine-specific
+installation/HITL runbook. The new history/draft workflow additionally requires:
+
+- schema-v1 backup and v2 migration/rollback review before upgrading real state;
+- exact-time jumps, >500-match paging, retained-density/coverage qualification;
+- independent cockpit queries and incident results, late-response handling;
+- acknowledged drafts, concurrent revision/token conflicts and explicit review;
+- committed-only exports and independently inspectable retained pin copies;
+- titlebar-free README preview remains labeled synthetic until installed review.
+
 ## Preconditions
 
 - Operator explicitly releases the installed desktop for testing.
