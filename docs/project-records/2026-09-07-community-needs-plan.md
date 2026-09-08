@@ -150,7 +150,7 @@ smallest complete behavior, then refactor shared predicates.
   Bind selected format/extension to the expiring single-use preview token.
 - Markdown reports include title, status, revision, UTC times, coverage/privacy
   caution, committed notes and ordered pinned evidence with exact IDs.
-- Render user content as escaped plain text (no active HTML/images/links);
+- Render user content as literal text blocks (no active HTML/images/links);
   keep preview as plain text. Metadata mode omits messages and notes.
 - An optional notes outline is offered only for empty notes. Insert it as an
   unsaved draft through the existing controller; never overwrite human text.
@@ -192,17 +192,17 @@ remaining native acceptance work. Do not claim installed polish from stubs.
 
 ## Acceptance checklist
 
-- [ ] Existing header/font/panel geometry preserved.
-- [ ] Context includes other levels and never loses its anchor to a dense burst.
-- [ ] Temporary exclusions do not affect retained history or pinned copies.
-- [ ] Repeat/comparison totals cover all matching retained records.
-- [ ] New/decreased counts carry missing-history and redaction qualifications.
-- [ ] Every aggregate can inspect an exact retained representative.
-- [ ] Both export formats write only reviewed bytes with private permissions.
-- [ ] Notes outline cannot overwrite existing work.
-- [ ] Docs cover every new workflow and comply with operator wording.
-- [ ] Offscreen, transport, lint, preview, soak and exact-SHA CI results recorded.
-- [ ] Installation remains deferred with actionable human acceptance steps.
+- [x] Existing header/font/panel geometry preserved.
+- [x] Context includes other levels and never loses its anchor to a dense burst.
+- [x] Temporary exclusions do not affect retained history or pinned copies.
+- [x] Repeat/comparison totals cover all matching retained records.
+- [x] New/decreased counts carry missing-history and redaction qualifications.
+- [x] Every aggregate can inspect an exact retained representative.
+- [x] Both export formats write only reviewed bytes with private permissions.
+- [x] Notes outline cannot overwrite existing work.
+- [x] Docs cover every new workflow and comply with operator wording.
+- [x] Offscreen, transport, lint, preview, soak and exact-SHA CI results recorded.
+- [x] Installation remains deferred with actionable human acceptance steps.
 
 ## Deliberately deferred
 

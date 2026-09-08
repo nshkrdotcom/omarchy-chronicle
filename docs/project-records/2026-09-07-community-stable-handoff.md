@@ -99,7 +99,7 @@ counting the full retained intervals. Similarity clustering is intentionally abs
 
 ## Verification at the stable source tree
 
-- `make check`: **94 Python tests, 13 JavaScript tests, 65 Qt cases** passed.
+- `make check`: **95 Python tests, 13 JavaScript tests, 65 Qt cases** passed.
 - `QT_SCALE_FACTOR=1.5 make test-qml`: **65 Qt cases** passed.
 - `make integration`: actual windowless Quickshell/Python workflow passed,
   including JSON metadata and Markdown detailed export and clean helper shutdown.
@@ -187,3 +187,45 @@ proximity are not proof of completeness, recovery or causation.
 Do not call the plugin “100% polished” until the operator accepts the installed
 workflow. Similarity clustering, automatic anomaly scoring, uploads, alerts,
 new sources and remediation remain outside this completed milestone.
+
+## Completion receipt
+
+Implementation checkpoint: `0da3a51456ad8c817a861ddb66e5a1760ec46429`.
+All three jobs passed in [CI run 34180711106](https://github.com/nshkrdotcom/omarchy-chronicle/actions/runs/34180711106):
+Python 3.11, Python 3.14, and offscreen Qt (both scales and fixture captures).
+
+Milestones pushed on the feature branch:
+
+- `66054235d727c0d939697590c0c5ce9b903b33b5`: research/wording/README, CI 34175869206 passed.
+- `1ef804205b3944b1e94fb8a74fe1702d2c4b1f49`: backend context/analysis/Markdown, CI 34176076805 passed.
+- `e12e3e0ede73d259ad3d1263feabd65f0887251f`: operator UI and mirrored handoffs.
+  CI 34180539311 failed its new palette assertion on the older Qt runner.
+- `0da3a51456ad8c817a861ddb66e5a1760ec46429`: explicit native color namespace,
+  a new regression check, repeated local verification and green CI.
+
+The failed CI run exposed unqualified `Color` resolving to Qt Controls'
+internal color utility instead of Omarchy's palette in older Qt. Earlier green
+CI logs also contained those color errors; the new palette assertion made them
+observable as a failure. Production QML now uses `Native.Color`. Corrected CI
+has no “Cannot read property” color errors. Final local suite: **95 Python,
+13 JS and 65 Qt cases**, with the same 65 Qt cases at 1.5×.
+
+Final local logs: `/tmp/chronicle-stable-check-final.log`,
+`/tmp/chronicle-stable-scaled-final.log`,
+`/tmp/chronicle-native-lint-hr2qh7m_.log`.
+CI logs: `/tmp/chronicle-stable-ci-failed.log` and
+`/tmp/chronicle-stable-ci-corrected.log`.
+
+The older Qt CI runner still emits **18 implicit-size binding-loop warnings**
+across its normal/scaled/fixture commands, involving Notes/ScrollView and dialog
+implicit sizing. Tests pass; local Qt 6.11 does not reproduce these warnings.
+This is not a warning-free cross-version claim. Preserve this finding for the
+next approved compatibility/layout pass and installed human review; do not
+silence warnings or change title/font sizes to hide it. No installed acceptance
+was attempted.
+
+The final documentation-only commit records this receipt and does not change
+the tested runtime. Resolve that descendant's SHA with `git rev-parse HEAD`
+and verify its own CI before selecting an installed revision. All Documents
+Markdown is mirrored in `docs/project-records/`; no private database or journal
+content is tracked. Work is paused after the final commit/push and CI check.

@@ -39,7 +39,7 @@ other warnings and failed imports are errors. This is not a zero-warning claim.
 
 ### Community-driven stable point
 
-The source milestone passes 94 Python tests, 13 JS tests and 65 Qt cases at
+The source milestone passes 95 Python tests, 13 JS tests and 65 Qt cases at
 both 1× and 1.5×. Real isolated transport now covers context, comparison and both
 export formats. Native imports resolve with 151 retained host/dynamic advisories.
 Plugin validation and the regenerated full-client preview pass. The synthetic
@@ -49,6 +49,13 @@ Plugin validation and the regenerated full-client preview pass. The synthetic
 See [the stable-point handoff](COMMUNITY-HANDOFF.md) for exact commits/CI,
 RED/GREEN evidence, local report paths and installation/human acceptance limits.
 No installed desktop was modified. Source development is paused by request.
+
+CI 34180539311 failed the new popup palette assertion on older Qt: unqualified
+Color references resolved to a Qt Controls internal type. The explicit native
+namespace fix at `0da3a51` passes all jobs in CI 34180711106. That run has no
+color property errors, but retains 18 older-Qt implicit-size binding-loop
+warnings across its normal/scaled/fixture commands. Local Qt 6.11 does not
+reproduce those layout warnings. Keep them in the next compatibility/HITL review.
 
 ### Earlier investigation-workflow tranche (checkpoint `9e9e417`)
 
