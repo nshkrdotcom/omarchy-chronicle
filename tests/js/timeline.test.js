@@ -51,3 +51,13 @@ test('missing sources and stale snapshots are not healthy', () => {
 test('range follows live clock, frozen range is independent', () => {
     assert.equal(M.windowStart(1_000_000_000,5),700_000_000);
 });
+test('source filter distinguishes journal scope', () => {
+    assert.equal(M.filter([{...event('a',10),source:'user-journal'}],{source:'system-journal'}).length,0);
+});
+test('comparison is operator-readable with signed units and missing qualification', () => {
+    const text=M.comparisonText({a:{label:'Before'},b:{label:'After'},duration_us:60000000,delta:{cpu_some_avg10:2,memory_available_kib:-1024},units:{cpu_some_avg10:'percentage points',memory_available_kib:'KiB'},missing:['io_some_avg10']});
+    assert.match(text,/Before → After/);
+    assert.match(text,/\+2.*percentage points/);
+    assert.match(text,/-1024.*KiB/);
+    assert.match(text,/Unavailable/);
+});

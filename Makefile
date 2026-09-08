@@ -12,3 +12,7 @@ lint:
 check: test test-qml lint
 demo:
 	QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software /usr/lib/qt6/bin/qmltestrunner -input tests/qml_preview -import tests/support
+integration:
+	python3 scripts/integration.py
+live-readonly:
+	python3 scripts/live_readonly.py

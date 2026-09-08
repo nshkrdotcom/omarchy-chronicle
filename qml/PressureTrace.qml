@@ -15,7 +15,8 @@ Item {
     onToUsChanged: chart.requestPaint()
     readonly property var visibleSamples: samples.filter(function(s){return s.time_us>=root.fromUs && s.time_us<=root.toUs})
     readonly property real maxValue: Math.max(1,Math.ceil(visibleSamples.reduce(function(m,s){var v=s.values[root.metric];return typeof v==="number"?Math.max(m,v):m},0)))
-    ChronicleLabel { text: "CPU pressure · some avg10 · % stalled (not utilization)"; font.pixelSize: Style.font.caption }
+    readonly property string metricLabel: metric==="cpu_some_avg10"?"CPU":metric==="memory_some_avg10"?"Memory":"I/O"
+    ChronicleLabel { text: root.metricLabel+" pressure · some avg10 · % stalled (not utilization)"; font.pixelSize: Style.font.caption }
     ChronicleLabel { anchors.right: parent.right; text: "0–"+root.maxValue.toFixed(0)+"%"; font.pixelSize: Style.font.caption }
     Canvas {
         id: chart

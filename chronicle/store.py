@@ -20,11 +20,13 @@ def private_dir(path):
     path = Path(path).absolute()
     if path.is_symlink():
         raise ValueError("state directory must not be a symlink")
+    existed = path.exists()
     path.mkdir(mode=0o700, parents=True, exist_ok=True)
     info = path.stat()
     if not stat.S_ISDIR(info.st_mode) or info.st_uid != os.getuid():
         raise ValueError("state directory must be owned by the current user")
-    path.chmod(0o700)
+    if existed and info.st_mode & 0o077:
+        raise ValueError("existing state directory must already be private (0700)")
     return path
 
 
@@ -128,11 +130,11 @@ class Store:
     def bookmarks(self):
         return self._list("bookmarks")
 
-    def bookmark(self, label, values):
+    def bookmark(self, label, values, observed_us=None):
         if len(self.bookmarks()) >= 256:
             raise ValueError("bookmark limit reached (256); remove one first")
         result = {"id": uuid.uuid4().hex, "time_us": self.now(), "label": redact(label, 100) or "Moment",
-                  "values": metrics(values)}
+                  "values": metrics(values), "observed_us": observed_us}
         with self.db:
             self.db.execute("INSERT INTO bookmarks VALUES(?,?,?)", (result["id"], result["time_us"], encode(result)))
         return result
@@ -154,11 +156,20 @@ class Store:
             else:
                 delta[key] = y - x
         return {"a": left, "b": right, "duration_us": right["time_us"] - left["time_us"],
-                "delta": delta, "missing": missing, "units": METRICS,
+                "delta": delta, "missing": missing,
+                "units": {key: "percentage points" if key.endswith("avg10") else unit for key, unit in METRICS.items()},
                 "caution": "Two observations, not a causal explanation. Missing fields are not zero."}
 
     def incidents(self):
         return self._list("incidents")
+
+    def incident_summaries(self):
+        return [dict(row) for row in self.db.execute("""
+            SELECT id, time_us, json_extract(body,'$.title') AS title,
+              json_extract(body,'$.status') AS status,
+              json_array_length(body,'$.evidence') AS evidence_count
+            FROM incidents ORDER BY time_us DESC, id DESC
+        """)]
 
     def incident(self, ident):
         row = self.db.execute("SELECT body FROM incidents WHERE id=?", (ident,)).fetchone()
@@ -172,7 +183,7 @@ class Store:
         return item
 
     def create_incident(self, title):
-        if len(self.incidents()) >= 128:
+        if self.db.execute("SELECT count(*) FROM incidents").fetchone()[0] >= 128:
             raise ValueError("incident limit reached (128); export and remove one first")
         return self._save_incident({"id": uuid.uuid4().hex, "time_us": self.now(),
                                    "title": redact(title, 100) or "Investigation", "notes": "",

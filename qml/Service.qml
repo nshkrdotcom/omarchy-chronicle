@@ -7,6 +7,9 @@ Item {
     property var shell: null
     property var manifest: null
     property var pluginRegistry: null
+    // Explicit seams for standalone, offscreen integration; never set by normal installation.
+    property bool demoMode: false
+    property string stateDirectory: ""
     property var snapshot: ({})
     property var incident: null
     property var comparison: null
@@ -51,6 +54,7 @@ Item {
                     lastAction="Recorder restarted; selections need review."
                 }
                 snapshot=data
+                if(data.storage_error)lastError=String(data.storage_error)
                 restartDelay=1000
                 return
             }
@@ -77,7 +81,7 @@ Item {
     }
     Process {
         id:daemon
-        command:root.pluginRoot?["python3",root.pluginRoot+"/bin/chronicle"]:[]
+        command:root.pluginRoot?["python3",root.pluginRoot+"/bin/chronicle"].concat(root.stateDirectory?["--state-dir",root.stateDirectory]:[]).concat(root.demoMode?["--demo"]:[]):[]
         stdinEnabled:true
         running:root.pluginRoot!=="" && !root.shuttingDown
         stdout:SplitParser { onRead:function(line){root.handleLine(line)} }

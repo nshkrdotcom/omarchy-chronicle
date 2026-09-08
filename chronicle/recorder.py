@@ -1,6 +1,7 @@
 """Recorder control protocol. Observation continues independently of panel visibility."""
 
 import math
+import sqlite3
 import uuid
 
 from .evidence import normalize
@@ -22,7 +23,12 @@ class Recorder:
         self.sequence = 0
         self.shutdown = False
         self.query = {}
-        self.store.record("Recorder started. History while Chronicle was stopped may be incomplete.", severity="warning")
+        self.observed_us = None
+        self.storage_error = ""
+        try:
+            self.store.record("Recorder started. History while Chronicle was stopped may be incomplete.", severity="warning")
+        except sqlite3.Error:
+            self.storage_error = "Storage write unavailable; saved evidence can still be inspected."
 
     def source_status(self, name, status, count=0):
         previous = self.sources.get(name, {})
@@ -32,6 +38,17 @@ class Recorder:
                               "batch_count": count}
 
     def poll(self):
+        if self.paused:
+            return
+        try:
+            self._poll()
+            self.storage_error = ""
+            self.sources.pop("storage", None)
+        except (sqlite3.Error, OSError):
+            self.storage_error = "Recording could not be persisted. Check free space and storage limits; saved evidence can still be inspected."
+            self.source_status("storage", "error")
+
+    def _poll(self):
         if self.paused:
             return
         self.sequence += 1
@@ -59,6 +76,7 @@ class Recorder:
             self.values = {"cpu_some_avg10": round(3 + 2 * math.sin(self.sequence), 2),
                            "memory_some_avg10": .2, "io_some_avg10": .4, "memory_available_kib": 8_000_000}
             self.store.sample(self.values)
+            self.observed_us = self.store.now()
             for name in ("user-journal", "system-journal", "pressure"):
                 self.source_status(name, "demo")
             return
@@ -72,19 +90,20 @@ class Recorder:
             self.source_status("system-journal", "disabled")
         self.values = read_pressure()
         self.store.sample(self.values)
+        self.observed_us = self.store.now()
         self.source_status("pressure", "ok" if all(v is not None for v in self.values.values()) else "degraded")
 
     def snapshot(self):
         return {"type": "snapshot", "protocol": 1, "session": self.session,
                 "time_us": self.store.now(), "demo": self.demo, "paused": self.paused,
                 "system_journal": self.system_journal,
+                "storage_error": self.storage_error,
                 "sources": list(self.sources.values()), "values": self.values,
                 "event_count": self.store.db.execute("SELECT count(*) FROM events").fetchone()[0],
                 "events": self.store.events(**self.query) if self.panel_open else [],
                 "samples": self.store.samples() if self.panel_open else [],
                 "bookmarks": self.store.bookmarks(),
-                "incidents": [{k: v for k, v in item.items() if k not in ("evidence", "notes")}
-                              | {"evidence_count": len(item["evidence"])} for item in self.store.incidents()]}
+                "incidents": self.store.incident_summaries()}
 
     def command(self, data):
         if not isinstance(data, dict) or not isinstance(data.get("cmd"), str):
@@ -128,9 +147,9 @@ class Recorder:
             self.query["limit"] = limit
             return {"query": self.query}
         if cmd == "bookmark":
-            if self.paused or not self.values:
+            if self.paused or not self.values or self.observed_us is None or self.store.now()-self.observed_us > 15_000_000:
                 raise ValueError("resume recording and obtain a sample before marking this moment")
-            return self.store.bookmark(text("label", "Moment", 100), self.values)
+            return self.store.bookmark(text("label", "Moment", 100), self.values, self.observed_us)
         if cmd == "remove_bookmark":
             self.store.remove_bookmark(text("id"))
             return {}

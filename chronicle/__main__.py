@@ -84,8 +84,10 @@ def main():
                         emit({"type": "result", "request_id": request_id, "cmd": data["cmd"], "ok": True, "result": result})
                         if not recorder.shutdown:
                             emit(recorder.snapshot())
-                    except (ValueError, TypeError, KeyError, OverflowError):
+                    except (ValueError, TypeError, KeyError, OverflowError, RecursionError):
                         emit({"type": "error", "request_id": request_id, "error": "Command rejected: invalid input, expired selection, or configured limit. Refresh and review your selection."})
+                    except (OSError, sqlite3.Error):
+                        emit({"type": "error", "request_id": request_id, "error": "Storage operation failed. Check private state permissions and free space. Existing evidence was not reset."})
                     if recorder.shutdown:
                         break
                 if len(buffer) > 16384:

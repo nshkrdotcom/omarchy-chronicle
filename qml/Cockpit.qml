@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -15,6 +16,8 @@ FocusScope {
     property int windowMinutes: 5
     property string severity: "all"
     property string category: "all"
+    property string sourceFilter: "all"
+    property string pressureMetric: "cpu_some_avg10"
     property string bookmarkA: ""
     property string bookmarkB: ""
     property string incidentId: ""
@@ -24,7 +27,7 @@ FocusScope {
     readonly property var view: frozen ? frozenSnapshot : live
     readonly property real endUs: frozen ? Number(view.time_us || nowUs) : nowUs
     readonly property real startUs: Model.windowStart(endUs,windowMinutes)
-    readonly property var visibleEvents: Model.filter(view.events || [],{from:startUs,to:endUs,severity:severity,category:category,search:search.text})
+    readonly property var visibleEvents: Model.filter(view.events || [],{from:startUs,to:endUs,severity:severity,category:category,source:sourceFilter,search:search.text})
     readonly property var selectedEvent: Model.selected(view.events || [],selectedId)
     readonly property var currentIncident: service ? service.incident : null
     readonly property string status: service && !service.daemonRunning ? "OFFLINE" : Model.health(live,nowUs)
@@ -37,11 +40,12 @@ FocusScope {
     function selectEvent(id) { selectedId=id }
     function openIncident(id) { incidentId=id; notes.text=""; request("incident",{id:id}) }
     function updateQuery() {
-        if(!frozen) request("query",{search:search.text,severity:severity,category:category})
+        if(!frozen) request("query",{search:search.text,severity:severity,category:category,source:sourceFilter})
     }
     onFrozenChanged: if(!frozen) updateQuery()
     onSeverityChanged: updateQuery()
     onCategoryChanged: updateQuery()
+    onSourceFilterChanged: updateQuery()
     Connections {
         target: root.service
         ignoreUnknownSignals: true
@@ -114,10 +118,16 @@ FocusScope {
                 RowLayout {
                     ChronicleButton { text:root.severity==="all"?"All levels":root.severity; onClicked:root.severity=root.severity==="all"?"error":root.severity==="error"?"warning":"all" }
                     ChronicleButton { text:root.category==="all"?"All categories":root.category; onClicked:{var choices=["all"].concat(Model.categories);root.category=choices[(choices.indexOf(root.category)+1)%choices.length]} }
+                    ChronicleButton { text:root.sourceFilter==="all"?"All sources":root.sourceFilter; onClicked:{var choices=["all","user-journal","system-journal","recorder","demo"];root.sourceFilter=choices[(choices.indexOf(root.sourceFilter)+1)%choices.length]} }
                     ChronicleLabel { Layout.fillWidth:true; text:"● info   ▲ warning   ◆ error · newest 500 matches · local time"; font.pixelSize:Style.font.caption }
                 }
                 EventLanes { Layout.fillWidth:true; events:root.visibleEvents; fromUs:root.startUs; toUs:root.endUs; selectedId:root.selectedId; onSelected:function(eventId){root.selectEvent(eventId)} }
-                PressureTrace { Layout.fillWidth:true; samples:root.view.samples||[]; fromUs:root.startUs; toUs:root.endUs }
+                RowLayout {
+                    ChronicleButton { text:"CPU PSI"; chosen:root.pressureMetric==="cpu_some_avg10"; onClicked:root.pressureMetric="cpu_some_avg10" }
+                    ChronicleButton { text:"Memory PSI"; chosen:root.pressureMetric==="memory_some_avg10"; onClicked:root.pressureMetric="memory_some_avg10" }
+                    ChronicleButton { text:"I/O PSI"; chosen:root.pressureMetric==="io_some_avg10"; onClicked:root.pressureMetric="io_some_avg10" }
+                }
+                PressureTrace { Layout.fillWidth:true; samples:root.view.samples||[]; fromUs:root.startUs; toUs:root.endUs; metric:root.pressureMetric }
                 RowLayout {
                     Layout.fillWidth:true
                     Layout.fillHeight:true
@@ -184,7 +194,7 @@ FocusScope {
                     ChronicleLabel { anchors.centerIn:parent; visible:marks.count===0; text:"No bookmarks yet. Mark a moment before your next change."; wrapMode:Text.Wrap; width:parent.width }
                 }
                 ScrollView { Layout.fillWidth:true; Layout.preferredHeight:Style.space(180); contentWidth:availableWidth; clip:true
-                    ChronicleLabel { width:parent.width; wrapMode:Text.Wrap; font.pixelSize:Style.font.caption; text:root.service && root.service.comparison?JSON.stringify(root.service.comparison,null,2):"No comparison selected. Unavailable measurements are never treated as zero." }
+                    ChronicleLabel { width:parent.width; wrapMode:Text.Wrap; font.pixelSize:Style.font.caption; text:Model.comparisonText(root.service?root.service.comparison:null) }
                 }
             }
             RowLayout {

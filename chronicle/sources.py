@@ -84,7 +84,7 @@ class Journal:
                 if len(line) > 65536:
                     raise ValueError("oversized record")
                 events.append(normalize(json.loads(line), self.name))
-            except (ValueError, TypeError, OverflowError):
+            except (ValueError, TypeError, OverflowError, RecursionError):
                 rejected += 1
         if len(events) > 200:
             events, gap = events[-200:], True

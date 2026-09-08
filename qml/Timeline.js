@@ -5,6 +5,7 @@ function filter(rows, options) {
     var query = String(options.search || "").toLowerCase();
     return (rows || []).filter(function(e) {
         return (!options.category || options.category === "all" || e.category === options.category)
+            && (!options.source || options.source === "all" || e.source === options.source)
             && (!options.severity || options.severity === "all" || e.severity === options.severity)
             && (options.from === undefined || e.time_us >= options.from)
             && (options.to === undefined || e.time_us <= options.to)
@@ -53,3 +54,14 @@ function health(snapshot, now) {
 }
 function windowStart(now, minutes) { return now - minutes * 60000000; }
 function timestamp(us) { return us ? new Date(us/1000).toLocaleString() : "Unavailable"; }
+function comparisonText(result) {
+    if(!result) return "No comparison selected. Unavailable measurements are never treated as zero.";
+    var names={cpu_some_avg10:"CPU PSI",memory_some_avg10:"Memory PSI",io_some_avg10:"I/O PSI",memory_available_kib:"Available memory"};
+    var lines=[result.a.label+" → "+result.b.label, "Wall-time interval: "+(result.duration_us/60000000).toFixed(2)+" minutes", ""];
+    Object.keys(result.delta || {}).forEach(function(key){var value=result.delta[key];lines.push((names[key]||key)+": "+(value>0?"+":"")+Number(value.toFixed(2))+" "+result.units[key]);});
+    if((result.missing||[]).length) lines.push("Unavailable: "+result.missing.map(function(k){return names[k]||k}).join(", "));
+    lines.push("", "Two observations, not a causal explanation. Clock changes can distort the wall-time interval.");
+    if(result.a.observed_us)lines.push("A measured: "+timestamp(result.a.observed_us));
+    if(result.b.observed_us)lines.push("B measured: "+timestamp(result.b.observed_us));
+    return lines.join("\n");
+}

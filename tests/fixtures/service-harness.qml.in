@@ -1,0 +1,28 @@
+import QtQuick
+import Quickshell
+import @QML_ROOT@ as Chronicle
+
+ShellRoot {
+    id:root
+    property int stage:0
+    Chronicle.Service {
+        id:service
+        manifest:({__sourceDir:@REPO_ROOT@})
+        demoMode:true
+        stateDirectory:@STATE_ROOT@
+    }
+    Timer {
+        interval:50;repeat:true;running:true
+        onTriggered:{
+            if(service.lastError) {console.error("CHRONICLE_INTEGRATION_ERROR "+service.lastError);Qt.quit();return}
+            if(root.stage===0 && service.snapshot.session) {service.setPanelOpen("harness",true);root.stage=1}
+            else if(root.stage===1 && (service.snapshot.events||[]).length) {service.request("bookmark",{label:"Before"});root.stage=2}
+            else if(root.stage===2 && (service.snapshot.bookmarks||[]).length) {service.request("create_incident",{title:"Transport investigation",pin_event_id:service.snapshot.events[0].id});root.stage=3}
+            else if(root.stage===3 && service.incident && service.incident.evidence.length) {service.request("preview_export",{id:service.incident.id,detail:false});root.stage=4}
+            else if(root.stage===4 && service.preview) {service.request("confirm_export",{token:service.preview.token});root.stage=5}
+            else if(root.stage===5 && service.lastAction.indexOf("Saved reviewed evidence:")===0) {service.shuttingDown=true;service.request("shutdown",{});root.stage=6}
+            else if(root.stage===6 && !service.daemonRunning) {console.log("CHRONICLE_INTEGRATION_OK");Qt.quit()}
+        }
+    }
+    Timer { interval:15000;running:true;onTriggered:{console.error("CHRONICLE_INTEGRATION_TIMEOUT stage="+root.stage);Qt.quit()} }
+}
