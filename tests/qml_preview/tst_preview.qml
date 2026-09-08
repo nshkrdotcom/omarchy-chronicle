@@ -101,6 +101,8 @@ TestCase {
             notes: "Audio and link events occurred near each other. Cause not established.",
             evidence: events.slice(0, 3)
         };
+        fake.incident.revision = 1;
+        cockpit.incidentEditor.adopt(fake.incident);
         fake.comparison = {
             a: fake.snapshot.bookmarks[0],
             b: fake.snapshot.bookmarks[1],
@@ -116,9 +118,15 @@ TestCase {
             }
         };
         cockpit.selectedId = "event-40";
-        cockpit.historyModel.result = {events:events, matching_count:events.length,
-            from_us:test.baseUs-300000000, to_us:test.baseUs, next:null, ceiling:45,
-            density:Model.buckets(events,test.baseUs-300000000,test.baseUs,48)};
+        cockpit.historyModel.result = {
+            events: events,
+            matching_count: events.length,
+            from_us: test.baseUs - 300000000,
+            to_us: test.baseUs,
+            next: null,
+            ceiling: 45,
+            density: Model.buckets(events, test.baseUs - 300000000, test.baseUs, 48)
+        };
     }
     function test_capture_data() {
         return [

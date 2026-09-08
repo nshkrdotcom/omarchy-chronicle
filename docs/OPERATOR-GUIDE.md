@@ -94,6 +94,28 @@ action alignment are shared across invocation routes; no overlay alternative
 exists. Styling derives from Omarchy's native popup and font tokens.
 # Historical exploration and saved views
 
+## Notes that survive investigation switches
+
+Notes stage to a separate private redacted draft after 500 ms of inactivity.
+The status distinguishes an unacknowledged draft, durable draft, committed notes
+and conflict. **Save notes** commits; **Resolve/Reopen** also commits the current
+text. An incident switch or explicit Close/Escape waits for outstanding local
+text to be acknowledged before leaving. Native outside-click/unload flushes are
+best effort: verify acknowledgement before deliberate shell restart or disable.
+
+An editor changing the same incident or draft cannot silently overwrite yours.
+**Review latest** displays committed notes, the saved draft, and your local text.
+Explicitly keep your text on the reviewed revision or use committed notes.
+**Discard draft** is confirmed and version-checked. Do not assume unsent text is
+safe after a process crash or storage failure. One bounded draft per incident;
+conflicting editors must reconcile deliberately.
+
+Detailed exports are disabled while local notes are uncommitted. Metadata-only
+exports never include those notes. **Inspect** beside a pin opens the saved copy
+with its exact source/boot/monotonic identity even after ordinary history expiry.
+Export previews are routed to their requesting cockpit; a newer preview still
+invalidates the helper's previous single-use token, including in another panel.
+
 The Timeline now requests its own bounded history pages, independent of other
 open cockpits. The interval is applied before the page limit. **Older/Newer**
 traverse matches; Older freezes the interval and receipt membership. **Interval**

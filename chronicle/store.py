@@ -11,6 +11,7 @@ import uuid
 
 from .evidence import METRICS, metrics, redact
 from .history import query as history_query, filters, integer
+from .errors import ConflictError
 
 
 def encode(value):
@@ -66,6 +67,7 @@ class Store:
             CREATE TABLE IF NOT EXISTS samples (id INTEGER PRIMARY KEY, time_us INTEGER, body TEXT);
             CREATE TABLE IF NOT EXISTS bookmarks (id TEXT PRIMARY KEY, time_us INTEGER, body TEXT);
             CREATE TABLE IF NOT EXISTS incidents (id TEXT PRIMARY KEY, time_us INTEGER, body TEXT);
+            CREATE TABLE IF NOT EXISTS drafts (id TEXT PRIMARY KEY, body TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, body TEXT);
         """)
         if version < 2:
@@ -269,11 +271,17 @@ class Store:
         row = self.db.execute("SELECT body FROM incidents WHERE id=?", (ident,)).fetchone()
         if not row:
             raise ValueError("incident no longer exists")
-        return json.loads(row[0])
+        item = json.loads(row[0])
+        item.setdefault("revision", 1)
+        return item
+
+    def _write_incident(self, item):
+        self.db.execute("INSERT OR REPLACE INTO incidents VALUES(?,?,?)", (item["id"], item["time_us"], encode(item)))
+        return item
 
     def _save_incident(self, item):
         with self.db:
-            self.db.execute("INSERT OR REPLACE INTO incidents VALUES(?,?,?)", (item["id"], item["time_us"], encode(item)))
+            self._write_incident(item)
         return item
 
     def create_incident(self, title):
@@ -281,35 +289,82 @@ class Store:
             raise ValueError("incident limit reached (128); export and remove one first")
         return self._save_incident({"id": uuid.uuid4().hex, "time_us": self.now(),
                                    "title": redact(title, 100) or "Investigation", "notes": "",
-                                   "status": "open", "evidence": []})
+                                   "status": "open", "evidence": [], "revision": 1})
 
-    def update_incident(self, ident, notes, status):
+    def update_incident(self, ident, notes, status, expected_revision=None, draft_token=None):
         if status not in ("open", "closed"):
             raise ValueError("invalid incident status")
-        item = self.incident(ident)
-        item.update(notes=redact(notes, 4096), status=status)
-        return self._save_incident(item)
+        with self.db:
+            self.db.execute("BEGIN IMMEDIATE")
+            item = self.incident(ident)
+            if expected_revision is not None and item["revision"] != expected_revision:
+                raise ConflictError("Incident changed; reload and review before saving. Your draft was not committed.")
+            if draft_token is not None:
+                self._check_draft(ident, draft_token)
+            item.update(notes=redact(notes, 4096), status=status, revision=item["revision"] + 1)
+            self._write_incident(item)
+            if draft_token is not None:
+                self.db.execute("DELETE FROM drafts WHERE id=?", (ident,))
+        return item
+
+    def draft(self, ident):
+        row = self.db.execute("SELECT body FROM drafts WHERE id=?", (ident,)).fetchone()
+        return json.loads(row[0]) if row else None
+
+    def _check_draft(self, ident, token):
+        draft = self.draft(ident)
+        if (draft["token"] if draft else "") != token:
+            raise ConflictError("The saved draft changed in another editor; reload and review. Local text was not saved.")
+
+    def stage_draft(self, ident, notes, base_revision, token):
+        integer(base_revision, "base_revision", 1)
+        if not isinstance(notes, str) or len(notes) > 4096:
+            raise ValueError("invalid draft notes")
+        with self.db:
+            self.db.execute("BEGIN IMMEDIATE")
+            item = self.incident(ident)
+            if base_revision > item["revision"]:
+                raise ValueError("invalid draft base revision")
+            self._check_draft(ident, token)
+            draft = {"notes": redact(notes, 4096), "base_revision": base_revision,
+                     "token": uuid.uuid4().hex, "updated_us": self.now()}
+            self.db.execute("INSERT OR REPLACE INTO drafts VALUES(?,?)", (ident, encode(draft)))
+        return draft
+
+    def discard_draft(self, ident, token):
+        with self.db:
+            self.db.execute("BEGIN IMMEDIATE")
+            self.incident(ident)
+            self._check_draft(ident, token)
+            self.db.execute("DELETE FROM drafts WHERE id=?", (ident,))
 
     def pin(self, ident, event_id):
-        item = self.incident(ident)
-        if any(event["id"] == event_id for event in item["evidence"]):
-            return item
-        if len(item["evidence"]) >= 64:
-            raise ValueError("incident evidence limit reached (64)")
-        row = self.db.execute("SELECT body FROM events WHERE id=?", (event_id,)).fetchone()
-        if not row:
-            raise ValueError("event expired; it cannot be reconstructed")
-        item["evidence"].append(json.loads(row[0]))
-        return self._save_incident(item)
+        with self.db:
+            self.db.execute("BEGIN IMMEDIATE")
+            item = self.incident(ident)
+            if any(event["id"] == event_id for event in item["evidence"]):
+                return item
+            if len(item["evidence"]) >= 64:
+                raise ValueError("incident evidence limit reached (64)")
+            row = self.db.execute("SELECT body FROM events WHERE id=?", (event_id,)).fetchone()
+            if not row:
+                raise ValueError("event expired; it cannot be reconstructed")
+            item["evidence"].append(json.loads(row[0]))
+            item["revision"] += 1
+            return self._write_incident(item)
 
     def unpin(self, ident, event_id):
-        item = self.incident(ident)
-        item["evidence"] = [event for event in item["evidence"] if event["id"] != event_id]
-        return self._save_incident(item)
+        with self.db:
+            self.db.execute("BEGIN IMMEDIATE")
+            item = self.incident(ident)
+            item["evidence"] = [event for event in item["evidence"] if event["id"] != event_id]
+            item["revision"] += 1
+            return self._write_incident(item)
 
     def remove_incident(self, ident):
         with self.db:
             self.db.execute("DELETE FROM incidents WHERE id=?", (ident,))
+            self.db.execute("DELETE FROM drafts WHERE id=?", (ident,))
 
     def setting(self, key, fallback=None):
         row = self.db.execute("SELECT body FROM settings WHERE key=?", (key,)).fetchone()

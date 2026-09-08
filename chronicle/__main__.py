@@ -13,6 +13,7 @@ import time
 
 from .recorder import Recorder
 from .store import Store, private_dir
+from .errors import ConflictError
 
 
 def state_dir():
@@ -84,6 +85,8 @@ def main():
                         emit({"type": "result", "request_id": request_id, "cmd": data["cmd"], "ok": True, "result": result})
                         if not recorder.shutdown:
                             emit(recorder.snapshot())
+                    except ConflictError as error:
+                        emit({"type": "error", "request_id": request_id, "code": "conflict", "error": str(error)})
                     except (ValueError, TypeError, KeyError, OverflowError, RecursionError):
                         emit({"type": "error", "request_id": request_id, "error": "Command rejected: invalid input, expired selection, or configured limit. Refresh and review your selection."})
                     except (OSError, sqlite3.Error):

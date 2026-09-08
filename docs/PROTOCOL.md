@@ -58,6 +58,25 @@ shell IPC API. Unknown commands are rejected. No command accepts a shell
 program, service-management operation or arbitrary export destination.
 # Historical investigation requests (additive protocol 1)
 
+## Revision-checked incident editing
+
+Incident reads/mutations return `revision` (legacy bodies default to 1) and
+`draft` (null or notes/base_revision/token/updated_us). Notes/status mutation
+`update_incident` now requires `expected_revision` and accepts `draft_token`
+(empty means no acknowledged draft). Pin/unpin advance incident revision.
+`stage_draft` requires `id`, `notes` (4096 max), `base_revision`, `draft_token`.
+It checks the current draft token, writes a redacted replacement with a fresh
+token, and does not change committed notes. One draft per existing incident;
+there can be at most 128. `discard_draft` checks the exact token and returns
+the current incident. A successful note commit clears only the checked draft.
+Conflict responses have `code: conflict` and a fixed safe explanation; arbitrary
+input, database errors and secret-bearing values are not echoed.
+
+Clients must not silently retry conflicting writes with a newer revision/token.
+Present committed notes, saved draft and local text for explicit review first.
+Exports use committed notes only. Acknowledged drafts survive helper restart;
+unacknowledged keystrokes are not promised crash durability.
+
 `save_view`: `label` (100 characters), filters as below and `window_minutes`
 1..10080. Returns a durable view with generated ID; at most 20. `remove_view`:
 exact `id`. Snapshots include `saved_views`. Labels/search are redacted before

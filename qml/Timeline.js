@@ -71,3 +71,10 @@ function sampleIndex(samples,time) {
     (samples||[]).forEach(function(sample,index){if(best<0 || Math.abs(sample.time_us-time)<Math.abs(samples[best].time_us-time))best=index;});
     return best;
 }
+function evidenceText(event) {
+    if (!event) return "No evidence selected.";
+    return event.message + "\n\nTime: " + timestamp(event.time_us) + "\nSource: " + event.source
+        + "\nUnit: " + event.unit + "\nBoot: " + (event.boot || "not recorded")
+        + "\nMonotonic µs: " + (event.monotonic_us === null || event.monotonic_us === undefined ? "unavailable" : event.monotonic_us)
+        + "\nID: " + event.id;
+}

@@ -72,6 +72,7 @@ TestCase {
         cockpit.sourceFilter = "all";
         cockpit.windowMinutes = 5;
         cockpit.historyModel.reset();
+        cockpit.incidentEditor.reset();
         sent = [];
     }
     function test_native_header_contract() {
@@ -81,6 +82,25 @@ TestCase {
         fuzzyCompare(title.font.letterSpacing, 0.4, 0.02);
         const actions = findChild(cockpit, "headerActions");
         verify(actions.x > title.x + title.width);
+    }
+    function test_foreign_incident_response_cannot_replace_local_notes() {
+        cockpit.incidentEditor.adopt({
+            id: "local",
+            title: "Local",
+            notes: "Committed",
+            revision: 1,
+            status: "open",
+            evidence: []
+        });
+        cockpit.incidentEditor.edit("Human work");
+        fake.incident = {
+            id: "other",
+            notes: "Unrelated",
+            title: "Other",
+            revision: 1
+        };
+        compare(cockpit.currentIncident.id, "local");
+        compare(findChild(cockpit, "incidentNotes").text, "Human work");
     }
     function test_bookmark_context_is_centered_and_frozen() {
         cockpit.jumpTo(500000000);

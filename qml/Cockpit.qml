@@ -11,6 +11,10 @@ FocusScope {
     property bool viewActive: true
     property real anchorUs: 0
     property alias historyModel: browser
+    property alias incidentEditor: editor
+    property var inspectedCopy: null
+    property var reviewedPreview: null
+    property string previewRequest: ""
     property real nowUs: Date.now() * 1000
     property int page: 0
     property bool frozen: false
@@ -39,10 +43,16 @@ FocusScope {
         search: search.text
     })
     readonly property var selectedEvent: Model.selected(visibleEvents, selectedId)
-    readonly property var currentIncident: service ? service.incident : null
+    readonly property var currentIncident: editor.item
     readonly property string status: service && !service.daemonRunning ? "OFFLINE" : Model.health(live, nowUs)
     signal dismissed
     function request(cmd, args) {
+        if (["create_incident", "pin", "unpin", "remove_incident"].indexOf(cmd) >= 0)
+            return editor.perform(cmd, args || {});
+        if (cmd === "preview_export") {
+            previewRequest = service ? service.request(cmd, args || {}) : "";
+            return previewRequest;
+        }
         if (service)
             return service.request(cmd, args || {});
         return "";
@@ -65,11 +75,7 @@ FocusScope {
         selectedId = id;
     }
     function openIncident(id) {
-        incidentId = id;
-        notes.text = "";
-        request("incident", {
-            id: id
-        });
+        editor.open(id);
     }
     function updateQuery() {
         browser.load({
@@ -107,8 +113,21 @@ FocusScope {
     onSeverityChanged: updateQuery()
     onCategoryChanged: updateQuery()
     onSourceFilterChanged: updateQuery()
-    onViewActiveChanged: if (viewActive && !frozen)
-        updateQuery()
+    onViewActiveChanged: {
+        if (viewActive && !frozen)
+            updateQuery();
+        if (!viewActive)
+            editor.flush();
+    }
+    onPageChanged: if (page !== 2)
+        editor.flush()
+    IncidentController {
+        id: editor
+        service: root.service
+        onItemChanged: root.incidentId = item ? item.id : ""
+        onReadyToClose: root.dismissed()
+        onReviewReady: reviewDialog.open()
+    }
     HistoryController {
         id: browser
         service: root.service
@@ -125,20 +144,24 @@ FocusScope {
     Connections {
         target: root.service
         ignoreUnknownSignals: true
-        function onIncidentChanged() {
-            if (root.currentIncident && !notes.activeFocus)
-                notes.text = root.currentIncident.notes || "";
-            if (root.currentIncident)
-                root.incidentId = root.currentIncident.id;
+        function onCompleted(id, command, result, error) {
+            if (command === "preview_export" && id === root.previewRequest) {
+                root.previewRequest = "";
+                if (!error) {
+                    root.reviewedPreview = result;
+                    exportDialog.open();
+                }
+            }
         }
-        function onPreviewChanged() {
-            if (root.service.preview)
-                exportDialog.open();
+        function onRestarted() {
+            root.reviewedPreview = null;
+            root.previewRequest = "";
+            exportDialog.close();
         }
     }
     Keys.onPressed: function (event) {
         if (event.key === Qt.Key_Escape) {
-            root.dismissed();
+            editor.closeSafely();
             event.accepted = true;
         } else if (event.key === Qt.Key_Space && !event.modifiers) {
             root.toggleFreeze();
@@ -223,7 +246,7 @@ FocusScope {
                 ChronicleButton {
                     text: "Close"
                     hint: "Esc · Close panel; recording continues"
-                    onClicked: root.dismissed()
+                    onClicked: editor.closeSafely()
                 }
             }
         }
@@ -623,32 +646,44 @@ FocusScope {
                             id: notes
                             objectName: "incidentNotes"
                             placeholderText: "Investigation notes (4096 characters maximum)"
-                            enabled: !!root.currentIncident
+                            text: editor.notes
+                            onTextChanged: if (text !== editor.notes)
+                                editor.edit(text)
+                            enabled: !!root.currentIncident && (!editor.busy || (editor.job && editor.job.cmd === "stage_draft"))
                             Accessible.name: "Incident notes"
                         }
+                    }
+                    ChronicleLabel {
+                        Layout.fillWidth: true
+                        wrapMode: Text.Wrap
+                        font.pixelSize: Style.font.caption
+                        color: editor.error || editor.conflict ? Color.urgent : Color.accent
+                        text: editor.stateText
                     }
                     RowLayout {
                         ChronicleButton {
                             text: "Save notes"
-                            enabled: !!root.currentIncident
-                            onClicked: root.request("update_incident", {
-                                id: root.incidentId,
-                                notes: notes.text,
-                                status: root.currentIncident.status
-                            })
+                            enabled: !!root.currentIncident && !editor.busy && !editor.conflict
+                            onClicked: editor.save(root.currentIncident.status)
                         }
                         ChronicleButton {
                             text: root.currentIncident && root.currentIncident.status === "closed" ? "Reopen" : "Resolve"
-                            enabled: !!root.currentIncident
-                            onClicked: root.request("update_incident", {
-                                id: root.incidentId,
-                                notes: notes.text,
-                                status: root.currentIncident.status === "closed" ? "open" : "closed"
-                            })
+                            enabled: !!root.currentIncident && !editor.busy && !editor.conflict
+                            onClicked: editor.save(root.currentIncident.status === "closed" ? "open" : "closed")
+                        }
+                        ChronicleButton {
+                            text: "Review latest"
+                            enabled: !!root.currentIncident && !editor.busy
+                            onClicked: editor.review()
+                        }
+                        ChronicleButton {
+                            text: "Discard draft"
+                            enabled: !!root.currentIncident && !editor.busy && (editor.dirty || !!editor.draftToken)
+                            onClicked: discardDialog.open()
                         }
                         ChronicleButton {
                             text: "Remove"
-                            enabled: !!root.currentIncident
+                            enabled: !!root.currentIncident && !editor.busy
                             onClicked: {
                                 root.confirmationId = "incident:" + root.incidentId;
                                 confirmDialog.open();
@@ -674,7 +709,15 @@ FocusScope {
                                 font.pixelSize: Style.font.caption
                             }
                             ChronicleButton {
+                                text: "Inspect"
+                                onClicked: {
+                                    root.inspectedCopy = pinRow.modelData;
+                                    evidenceDialog.open();
+                                }
+                            }
+                            ChronicleButton {
                                 text: "Unpin"
+                                enabled: !editor.busy
                                 onClicked: root.request("unpin", {
                                     id: root.incidentId,
                                     event_id: pinRow.modelData.id
@@ -697,7 +740,8 @@ FocusScope {
                         }
                         ChronicleButton {
                             text: "Preview export"
-                            enabled: !!root.currentIncident
+                            enabled: !!root.currentIncident && !editor.busy && (!root.detailedExport || !editor.dirty)
+                            hint: editor.dirty ? "Commit or discard the draft before a detailed export. Metadata excludes notes." : "Review committed evidence only"
                             onClicked: root.request("preview_export", {
                                 id: root.incidentId,
                                 detail: root.detailedExport
@@ -765,7 +809,7 @@ FocusScope {
             Layout.fillWidth: true
             font.pixelSize: Style.font.caption
             color: root.service && (root.service.lastError || root.live.storage_error) ? Color.urgent : Color.accent
-            text: root.service ? (root.service.lastError || root.live.storage_error || root.service.lastAction || "Local evidence · correlation is not causation · no automatic repairs") : "Waiting for Chronicle service"
+            text: editor.error || (root.service ? (root.service.lastError || root.live.storage_error || root.service.lastAction || "Local evidence · correlation is not causation · no automatic repairs") : "Waiting for Chronicle service")
         }
     }
     Timer {
@@ -913,6 +957,98 @@ FocusScope {
         }
     }
     Dialog {
+        id: discardDialog
+        title: "Discard this draft?"
+        modal: true
+        anchors.centerIn: parent
+        width: Math.min(parent.width - 24, Style.space(540))
+        standardButtons: Dialog.Cancel | Dialog.Ok
+        font.family: Style.font.family
+        font.pixelSize: Style.font.body
+        background: Rectangle {
+            color: Color.popups.background
+            border.color: Color.popups.border
+        }
+        ChronicleLabel {
+            width: parent.width
+            wrapMode: Text.Wrap
+            text: "Discard the local text and the acknowledged draft, returning to committed notes. A changed draft in another editor will not be removed."
+        }
+        onAccepted: editor.discard()
+    }
+    Dialog {
+        id: reviewDialog
+        title: "Review latest incident · resolve explicitly"
+        modal: true
+        anchors.centerIn: parent
+        width: Math.min(parent.width - 24, Style.space(820))
+        height: Math.min(parent.height - 24, Style.space(620))
+        standardButtons: Dialog.Cancel
+        font.family: Style.font.family
+        font.pixelSize: Style.font.body
+        background: Rectangle {
+            color: Color.popups.background
+            border.color: Color.popups.border
+        }
+        ColumnLayout {
+            anchors.fill: parent
+            ChronicleLabel {
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+                text: "Review all three versions. Keeping your text acknowledges the latest revision and saved draft before staging your version. Another subsequent edit still causes a conflict."
+            }
+            ScrollView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Notes {
+                    readOnly: true
+                    maximumCharacters: 0
+                    text: editor.reviewItem ? "COMMITTED (revision " + editor.reviewItem.revision + ")\n" + editor.reviewItem.notes + "\n\nSAVED DRAFT\n" + (editor.reviewItem.draft ? editor.reviewItem.draft.notes : "None") + "\n\nYOUR LOCAL TEXT\n" + editor.notes : ""
+                }
+            }
+            RowLayout {
+                ChronicleButton {
+                    text: "Keep my text on latest revision"
+                    onClicked: {
+                        editor.rebase();
+                        reviewDialog.close();
+                    }
+                }
+                ChronicleButton {
+                    text: "Use committed notes"
+                    onClicked: {
+                        editor.rebase();
+                        editor.discard();
+                        reviewDialog.close();
+                    }
+                }
+            }
+        }
+    }
+    Dialog {
+        id: evidenceDialog
+        title: "Saved evidence copy · retained independently"
+        modal: true
+        anchors.centerIn: parent
+        width: Math.min(parent.width - 24, Style.space(760))
+        height: Math.min(parent.height - 24, Style.space(500))
+        standardButtons: Dialog.Close
+        font.family: Style.font.family
+        font.pixelSize: Style.font.body
+        background: Rectangle {
+            color: Color.popups.background
+            border.color: Color.popups.border
+        }
+        ScrollView {
+            anchors.fill: parent
+            Notes {
+                readOnly: true
+                maximumCharacters: 0
+                text: Model.evidenceText(root.inspectedCopy)
+            }
+        }
+    }
+    Dialog {
         id: exportDialog
         objectName: "exportDialog"
         title: "Review exact export · no upload"
@@ -942,16 +1078,17 @@ FocusScope {
                     maximumCharacters: 0
                     wrapMode: TextEdit.WrapAnywhere
                     font.pixelSize: Style.font.caption
-                    text: root.service && root.service.preview ? root.service.preview.text : ""
+                    text: root.reviewedPreview ? root.reviewedPreview.text : ""
                 }
             }
             ChronicleButton {
                 text: "Save reviewed export"
-                enabled: root.service && !!root.service.preview
+                enabled: root.service && !!root.reviewedPreview
                 onClicked: {
                     root.request("confirm_export", {
-                        token: root.service.preview.token
+                        token: root.reviewedPreview.token
                     });
+                    root.reviewedPreview = null;
                     exportDialog.close();
                 }
             }

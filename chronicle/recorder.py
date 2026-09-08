@@ -6,6 +6,7 @@ import uuid
 
 from .evidence import normalize
 from .sources import Journal, read_pressure
+from .history import integer
 
 
 class Recorder:
@@ -118,6 +119,8 @@ class Recorder:
             if type(data.get(key)) is not bool:
                 raise ValueError(key + " must be boolean")
             return data[key]
+        def with_draft(item):
+            return {**item, "draft": self.store.draft(item["id"])}
         if cmd == "panel":
             self.panel_open = boolean("open")
             return {"open": self.panel_open}
@@ -163,15 +166,22 @@ class Recorder:
         if cmd == "compare":
             return self.store.compare(text("a"), text("b"))
         if cmd == "create_incident":
-            return self.store.create_incident(text("title", "Investigation", 100))
+            return with_draft(self.store.create_incident(text("title", "Investigation", 100)))
         if cmd == "incident":
-            return self.store.incident(text("id"))
+            return with_draft(self.store.incident(text("id")))
         if cmd == "update_incident":
-            return self.store.update_incident(text("id"), text("notes"), text("status", "open"))
+            return with_draft(self.store.update_incident(text("id"), text("notes"), text("status", "open"),
+                integer(data.get("expected_revision"), "expected_revision", 1), text("draft_token", "", 64)))
+        if cmd == "stage_draft":
+            return self.store.stage_draft(text("id"), text("notes"),
+                integer(data.get("base_revision"), "base_revision", 1), text("draft_token", "", 64))
+        if cmd == "discard_draft":
+            self.store.discard_draft(text("id"), text("draft_token", "", 64))
+            return with_draft(self.store.incident(text("id")))
         if cmd == "pin":
-            return self.store.pin(text("id"), text("event_id"))
+            return with_draft(self.store.pin(text("id"), text("event_id")))
         if cmd == "unpin":
-            return self.store.unpin(text("id"), text("event_id"))
+            return with_draft(self.store.unpin(text("id"), text("event_id")))
         if cmd == "remove_incident":
             if data.get("confirm") is not True:
                 raise ValueError("explicit deletion confirmation required")

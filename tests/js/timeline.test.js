@@ -67,3 +67,10 @@ test('sample inspection includes explicit missing observations', () => {
     assert.equal(M.sampleIndex(samples,18),1);
     assert.equal(M.sampleIndex([],18),-1);
 });
+test('saved evidence inspection retains exact provenance including zero monotonic time', () => {
+    const text=M.evidenceText({id:'exact',time_us:1000000,source:'user-journal',unit:'worker',boot:'boot-one',monotonic_us:0,message:'Saved copy'});
+    assert.match(text,/Saved copy/);
+    assert.match(text,/Boot: boot-one/);
+    assert.match(text,/Monotonic µs: 0/);
+    assert.match(text,/ID: exact/);
+});

@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import shutil
 import signal
+import sqlite3
 import subprocess
 import tempfile
 
@@ -17,7 +18,8 @@ with tempfile.TemporaryDirectory(prefix="chronicle-transport-") as directory:
     runtime.mkdir(mode=0o700)
     service_copy = work / "service"
     service_copy.mkdir()
-    shutil.copyfile(root / "qml/Service.qml", service_copy / "Service.qml")
+    for filename in ("Service.qml", "HistoryController.qml", "IncidentController.qml"):
+        shutil.copyfile(root / "qml" / filename, service_copy / filename)
     template = (root / "tests/fixtures/service-harness.qml.in").read_text()
     for key, value in {"@QML_ROOT@": service_copy.as_uri(), "@REPO_ROOT@": str(root), "@STATE_ROOT@": str(work / "state")}.items():
         template = template.replace(key, json.dumps(value))
@@ -52,4 +54,10 @@ with tempfile.TemporaryDirectory(prefix="chronicle-transport-") as directory:
     assert len(evidence["evidence"]) == 1
     assert evidence["detail_included"] is False
     assert not any("message" in event for event in evidence["evidence"])
-    print("PASS: real offscreen Quickshell → Python → SQLite → bookmark → incident → pin → preview → export → clean shutdown. Synthetic data only.")
+    with sqlite3.connect(work / "state/chronicle.sqlite3") as db:
+        incident = json.loads(db.execute("SELECT body FROM incidents").fetchone()[0])
+        assert incident["notes"] == "Verified committed investigation notes"
+        assert incident["revision"] == 3
+        assert db.execute("SELECT count(*) FROM drafts").fetchone()[0] == 0
+        assert len(json.loads(db.execute("SELECT body FROM settings WHERE key='saved_views'").fetchone()[0])) == 1
+    print("PASS: real offscreen Quickshell → paged history → bookmark → incident → pin → draft → revision-checked commit → saved view → metadata preview/export → clean shutdown. Synthetic data only.")
