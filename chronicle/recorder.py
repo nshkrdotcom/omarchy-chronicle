@@ -137,6 +137,8 @@ class Recorder:
         if cmd == "refresh":
             self.poll()
             return {"refreshed": True}
+        if cmd == "history":
+            return self.store.history(**{key: value for key, value in data.items() if key not in ("cmd", "request_id")})
         if cmd == "query":
             limit = data.get("limit", 500)
             if type(limit) is not int or not 1 <= limit <= 500:

@@ -56,3 +56,24 @@ retry create/bookmark operations, which can already have committed.
 The transport is local parent-child stdio, not a network server or public
 shell IPC API. Unknown commands are rejected. No command accepts a shell
 program, service-management operation or arbitrary export destination.
+# Historical investigation requests (additive protocol 1)
+
+`history`: `from_us`/`to_us` inclusive, nonnegative JSON-safe integers;
+`limit` 1..500 (default 200); optional literal `search` (200 characters),
+`severity`, `category`, `source`. Returns `events`, `matching_count`, 48 density
+bins (`count`, `errors`, `warnings`), retained source-time bounds, `ceiling`,
+`next` and `retention_generation`. Continue with the same filters/range/ceiling
+and `before: next`. Equal timestamps are disambiguated by exact event ID.
+This request is stateless and does not change the legacy global live query.
+Later arrivals, even backdated ones, are excluded by the receipt ceiling.
+Retention can remove earlier results; compare retention generations and warn.
+Counts/density describe matching retained evidence, not source completeness.
+
+Schema 2 migrates schema 1 transactionally, preserving existing records and
+cursors. Events receive an AUTOINCREMENT sequence and receipt time; legacy
+receipt times are migration-time estimates (`receipt_age_estimated`). Count
+retention uses receipt sequence, age retention uses receipt wall time. Source
+wall time/boot/monotonic fields remain unchanged. Backwards receipt-clock changes
+can extend age retention; the hard event-count cap still applies. Older builds
+refuse schema 2 rather than resetting it. Back up private state before upgrading
+an installed recorder; do not run old and new helpers against one state directory.

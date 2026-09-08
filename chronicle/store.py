@@ -10,6 +10,7 @@ import time
 import uuid
 
 from .evidence import METRICS, metrics, redact
+from .history import query as history_query
 
 
 def encode(value):
@@ -49,7 +50,7 @@ class Store:
         self.db = sqlite3.connect(db, timeout=2)
         self.db.row_factory = sqlite3.Row
         version = self.db.execute("PRAGMA user_version").fetchone()[0]
-        if version not in (0, 1):
+        if version not in (0, 1, 2):
             self.db.close()
             raise ValueError("unsupported database schema; state preserved")
         self.db.execute("PRAGMA journal_mode=WAL")
@@ -66,8 +67,33 @@ class Store:
             CREATE TABLE IF NOT EXISTS bookmarks (id TEXT PRIMARY KEY, time_us INTEGER, body TEXT);
             CREATE TABLE IF NOT EXISTS incidents (id TEXT PRIMARY KEY, time_us INTEGER, body TEXT);
             CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, body TEXT);
-            PRAGMA user_version=1;
         """)
+        if version < 2:
+            # No executescript here: every DDL/data/schema change shares one
+            # explicit transaction, including rollback on migration failure.
+            try:
+                self.db.execute("BEGIN IMMEDIATE")
+                legacy_count = self.db.execute("SELECT count(*) FROM events").fetchone()[0]
+                self.db.execute("DROP INDEX IF EXISTS events_time")
+                self.db.execute("ALTER TABLE events RENAME TO events_v1")
+                self.db.execute("""CREATE TABLE events (
+                    seq INTEGER PRIMARY KEY AUTOINCREMENT, id TEXT NOT NULL UNIQUE,
+                    time_us INTEGER NOT NULL, source TEXT NOT NULL, category TEXT NOT NULL,
+                    severity TEXT NOT NULL, body TEXT NOT NULL, received_us INTEGER NOT NULL)""")
+                self.db.execute("""INSERT INTO events(id,time_us,source,category,severity,body,received_us)
+                    SELECT id,time_us,source,category,severity,body,? FROM events_v1 ORDER BY time_us,id""", (self.now(),))
+                self.db.execute("DROP TABLE events_v1")
+                self.db.execute("CREATE INDEX events_time ON events(time_us DESC,id DESC)")
+                self.db.execute("CREATE INDEX events_received ON events(received_us)")
+                if legacy_count:
+                    self.db.execute("INSERT OR REPLACE INTO settings VALUES(?,?)", ("receipt_age_estimated", "true"))
+                self.db.execute("PRAGMA user_version=2")
+                self.db.commit()
+            except Exception:
+                self.db.rollback()
+                self.db.close()
+                raise
+        self.db.create_function("casefold", 1, lambda value: str(value).casefold(), deterministic=True)
 
     def close(self):
         self.db.close()
@@ -83,18 +109,21 @@ class Store:
             for event in events:
                 if event["source"] != source or len(encode(event)) > 12000:
                     raise ValueError("invalid event source or size")
-                self.db.execute("INSERT OR IGNORE INTO events VALUES(?,?,?,?,?,?)",
+                self.db.execute("INSERT OR IGNORE INTO events(id,time_us,source,category,severity,body,received_us) VALUES(?,?,?,?,?,?,?)",
                                 (event["id"], event["time_us"], source, event["category"],
-                                 event["severity"], encode(event)))
+                                 event["severity"], encode(event), self.now()))
             if gap_message:
                 gap = self._internal_event(gap_message, severity="warning")
-                self.db.execute("INSERT INTO events VALUES(?,?,?,?,?,?)",
+                self.db.execute("INSERT INTO events(id,time_us,source,category,severity,body,received_us) VALUES(?,?,?,?,?,?,?)",
                                 (gap["id"], gap["time_us"], gap["source"], gap["category"],
-                                 gap["severity"], encode(gap)))
+                                 gap["severity"], encode(gap), self.now()))
             if cursor is not None:
                 self.db.execute("INSERT OR REPLACE INTO cursors VALUES(?,?)", (source, cursor))
-            self.db.execute("DELETE FROM events WHERE time_us < ?", (self.now() - 7 * 86400_000_000,))
-            self.db.execute("DELETE FROM events WHERE id NOT IN (SELECT id FROM events ORDER BY time_us DESC, id DESC LIMIT ?)", (self.event_limit,))
+            removed = self.db.execute("DELETE FROM events WHERE received_us < ?", (self.now() - 7 * 86400_000_000,)).rowcount
+            removed += self.db.execute("DELETE FROM events WHERE seq NOT IN (SELECT seq FROM events ORDER BY seq DESC LIMIT ?)", (self.event_limit,)).rowcount
+            if removed:
+                generation = self.setting("retention_generation", 0) + removed
+                self.db.execute("INSERT OR REPLACE INTO settings VALUES(?,?)", ("retention_generation", encode(generation)))
 
     def _internal_event(self, message, category="recorder", severity="info"):
         return {"id": uuid.uuid4().hex, "time_us": self.now(), "source": "recorder",
@@ -128,6 +157,43 @@ class Store:
         with self.db:
             self.db.execute("INSERT INTO samples(time_us,body) VALUES(?,?)", (self.now(), encode(metrics(values))))
             self.db.execute("DELETE FROM samples WHERE id NOT IN (SELECT id FROM samples ORDER BY id DESC LIMIT 720)")
+
+    def history(self, **options):
+        query = history_query(options)
+        ceiling = query["ceiling"]
+        if ceiling is None:
+            row = self.db.execute("SELECT seq FROM sqlite_sequence WHERE name='events'").fetchone()
+            ceiling = row[0] if row else 0
+        clauses, args = ["seq<=?", "time_us>=?", "time_us<=?"], [ceiling, query["from_us"], query["to_us"]]
+        for column in ("severity", "category", "source"):
+            if query[column] != "all":
+                clauses.append(column + "=?")
+                args.append(query[column])
+        if query["search"]:
+            clauses.append("instr(casefold(json_extract(body,'$.message') || ' ' || json_extract(body,'$.unit')),?)>0")
+            args.append(query["search"].casefold())
+        where = " WHERE " + " AND ".join(clauses)
+        density = [{"count": 0, "errors": 0, "warnings": 0} for _ in range(48)]
+        count = 0
+        span = max(1, query["to_us"] - query["from_us"])
+        for row in self.db.execute("SELECT time_us,severity FROM events" + where, args):
+            bucket = density[min(47, (row[0] - query["from_us"]) * 48 // span)]
+            bucket["count"] += 1
+            bucket["errors"] += row[1] == "error"
+            bucket["warnings"] += row[1] == "warning"
+            count += 1
+        if query["before"]:
+            where += " AND (time_us,id)<(?,?)"
+            args += [query["before"]["time_us"], query["before"]["id"]]
+        rows = self.db.execute("SELECT body FROM events" + where + " ORDER BY time_us DESC,id DESC LIMIT ?", args + [query["limit"] + 1]).fetchall()
+        events = [json.loads(row[0]) for row in rows[:query["limit"]]]
+        next_cursor = {key: events[-1][key] for key in ("time_us", "id")} if len(rows) > query["limit"] else None
+        retained = dict(self.db.execute("SELECT count(*) AS count,min(time_us) AS from_us,max(time_us) AS to_us FROM events").fetchone())
+        return {"events": events, "next": next_cursor, "ceiling": ceiling,
+                "matching_count": count, "density": density, "retained": retained,
+                "from_us": query["from_us"], "to_us": query["to_us"],
+                "retention_generation": self.setting("retention_generation", 0),
+                "receipt_age_estimated": self.setting("receipt_age_estimated", False)}
 
     def samples(self):
         return [{"time_us": row[0], "values": json.loads(row[1])} for row in
