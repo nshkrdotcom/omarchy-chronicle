@@ -160,7 +160,7 @@ Item {
             root.preview = null;
             if (root.shuttingDown)
                 return;
-            root.lastError = "Recorder stopped (" + code + "). Retrying with bounded backoff; previous evidence remains on disk.";
+            root.lastError = "Recorder stopped (" + code + "). Retrying with limited backoff; previous evidence remains on disk.";
             restart.interval = root.restartDelay;
             root.restartDelay = Math.min(30000, root.restartDelay * 2);
             restart.restart();

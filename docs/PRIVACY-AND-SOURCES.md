@@ -10,7 +10,7 @@
 | Memory availability | On | `MemAvailable`, KiB | Observation, not a capacity forecast |
 | Recorder lifecycle | On | Startup, pause/resume and continuity qualifications | Does not recover history that no longer exists |
 | Network/audio/power/desktop | Journal-derived | Records classified by source unit/identifier | Not independent D-Bus device/config watchers |
-| Bookmarks/incidents | Explicit operator action | Bounded labels, scalar observations, notes and pinned copies | Can contain sensitive context |
+| Bookmarks/incidents | Explicit operator action | Limited labels, scalar observations, notes and pinned copies | Can contain sensitive context |
 
 No source reads clipboard data, packet payloads, process command lines,
 application windows, screenshots, arbitrary files, or shell history. No
@@ -18,16 +18,16 @@ mutating system command or automatic repair path exists.
 
 Journal reads are argv-only subprocesses with a two-second deadline and a
 2-MiB combined output budget per attempt. At most 200 records are accepted
-from a bounded 201-record tail. An expired/unreadable cursor can trigger one
-bounded five-minute fallback; the discontinuity is reported. A high-volume
+from a limited 201-record tail. An expired/unreadable cursor can trigger one
+limited five-minute fallback; the discontinuity is reported. A high-volume
 journal can exceed the batch size: this is a qualified flight recorder, not
 an exhaustive audit facility. Cursors are opaque and committed with events.
 
 ## Stored fields
 
 Journal events retain: generated event ID, opaque cursor, realtime and
-monotonic microseconds, boot ID, source, bounded/redacted unit or identifier,
-category, severity, and bounded/redacted message. Other journal fields are
+monotonic microseconds, boot ID, source, limited/redacted unit or identifier,
+category, severity, and limited/redacted message. Other journal fields are
 discarded. SQLite, not the source journal, holds Chronicle's copies.
 
 The redactor covers common credential assignments, bearer/basic credentials,

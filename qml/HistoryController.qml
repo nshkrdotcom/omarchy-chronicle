@@ -1,6 +1,6 @@
 import QtQuick
 
-// Each cockpit owns this bounded model. The shared service routes replies only;
+// Each cockpit owns this limited model. The shared service routes replies only;
 // it never stores another cockpit's query or historical result.
 Item {
     id: root

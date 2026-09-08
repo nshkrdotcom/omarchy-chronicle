@@ -28,7 +28,7 @@ Date: 2026-09-07, Pacific/Honolulu. Source checkout only; no installed changes.
 | Real Quickshell transport | Actual Service.qml copy, Python helper, SQLite and export in isolated XDG roots | Bar/popup/native compositor behavior |
 | Fixture screenshots | Four implemented pages with synthetic data and test style tokens | Screenshots of the installed plugin |
 | One-shot live probe | Accessible user journal and four scalar metrics, temporary private state | Exhaustive journal permissions/retention coverage |
-| Synthetic helper soak | Bounded helper lifecycle and panel-state commands | Native shell soak or real journal burst performance |
+| Synthetic helper soak | Limited helper lifecycle and panel-state commands | Native shell soak or real journal burst performance |
 
 `make check` runs Python/JS/offscreen Qt/native import lint. `make integration`
 adds real windowless Quickshell transport. Native lint retains its host-dynamic
@@ -75,7 +75,7 @@ shortens text where possible, and lets the source adapter qualify unpersistable
 identity as rejected/gap evidence instead of crashing collection.
 
 The expanded fixture harness initially rendered an empty loading state because
-it lacked a history reply; it now supplies the correct bounded model and asserts
+it lacked a history reply; it now supplies the correct limited model and asserts
 loaded evidence/selection before capture. Native lint rejected unqualified
 delegate access in the new graphic, corrected with explicit IDs. The expanded
 transport harness initially omitted the new controller copies, corrected before
@@ -99,7 +99,7 @@ These development failures are recorded, not relabeled as installed failures.
   official [checkout](https://github.com/actions/checkout),
   [setup-python](https://github.com/actions/setup-python), and
   [setup-node](https://github.com/actions/setup-node) releases (Node 24 action
-  runtime), with bounded job timeouts. This does not change the Node 22 version
+  runtime), with limited job timeouts. This does not change the Node 22 version
   used to test Chronicle's pure JavaScript model.
 - The actual offscreen Quickshell-to-helper integration passed bookmark,
   incident creation, exact pin, metadata preview, export and graceful shutdown.

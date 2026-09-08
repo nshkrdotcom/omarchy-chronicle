@@ -1,9 +1,13 @@
 # Chronicle
 
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/nshkrdotcom/omarchy-chronicle)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-Omarchy%20Quattro-purple.svg)](https://github.com/nshkrdotcom/omarchy-chronicle)
+
 What changed just before this broke?
 
 Chronicle (`nshkr.chronicle`) is a local-first desktop incident flight recorder
-for Omarchy. It brings timestamped evidence, bounded resource history,
+for Omarchy. It brings timestamped evidence, limited resource history,
 bookmarks, before/after comparisons, and saved investigations into one native
 panel. Correlation is not proof of causation.
 
@@ -98,7 +102,7 @@ Persistent state defaults to `$XDG_STATE_HOME/nshkr.chronicle`, or
 `~/.local/state/nshkr.chronicle` when unset/relative. Recording continues while
 the panel is closed. Pause stops source collection; it does not erase history.
 
-Messages are bounded and redacted before persistence, but generic redaction
+Messages are limited and redacted before persistence, but generic redaction
 cannot recognize every secret. Review all exports before sharing. The journal's
 `_HOSTNAME` and `_CMDLINE` fields, other unselected fields, and raw journal objects
 are not persisted. Message text and identifiers may still reveal hostnames or
@@ -119,4 +123,8 @@ installation and human-in-the-loop polish process; installation remains deferred
 
 The [implementation plan](docs/IMPLEMENTATION-PLAN.md) records research,
 architecture and TDD milestones. See [contributing](CONTRIBUTING.md) before
-working on the plugin. MIT © 2026 nshkrdotcom.
+working on the plugin.
+
+## License
+
+Chronicle is open-source software licensed under the [MIT License](LICENSE).

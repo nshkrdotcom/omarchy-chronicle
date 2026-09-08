@@ -33,7 +33,7 @@
    Bound command runtime and output, expose truncation and cursor invalidation.
 3. [SQLite WAL](https://www.sqlite.org/wal.html) and
    [isolation](https://www.sqlite.org/isolation.html): one helper owns writes;
-   durable transactions, schema versioning, busy timeout, bounded rows and page
+   durable transactions, schema versioning, busy timeout, limited rows and page
    budget, private state directory. Cursor and events commit together. A second
    recorder must not concurrently ingest the same database.
 4. [Linux PSI](https://docs.kernel.org/accounting/psi.html): pressure is time
@@ -48,7 +48,7 @@
 
 ### A. Recorder and evidence integrity
 
-Python standard-library helper; line-delimited JSON control channel. Bounded
+Python standard-library helper; line-delimited JSON control channel. Limited
 user-journal batches, opt-in accessible system journal, cursor resume, durable
 deduplication, exact source/boot/realtime/monotonic provenance. Classify service,
 desktop, network, audio, power, and resource evidence conservatively, retaining
@@ -73,7 +73,7 @@ Inspector displays evidence and cautions, never an invented root cause.
 
 ### C. Bookmarks and comparisons
 
-Mark this moment with a bounded label and scalar snapshot. Durable bookmarks;
+Mark this moment with a limited label and scalar snapshot. Durable bookmarks;
 select exact A/B bookmarks, report time interval and only comparable numeric
 fields, with units and missing-data qualification. No reconstructed state before
 recording began and no extrapolated claims across missing samples.
@@ -81,7 +81,7 @@ recording began and no extrapolated claims across missing samples.
 ### D. Incident workspaces
 
 Create named incidents; save copied event evidence so normal recorder retention
-does not silently destroy an investigation. Pin/unpin evidence, edit bounded
+does not silently destroy an investigation. Pin/unpin evidence, edit limited
 notes, close/reopen incidents. Saved incidents are independently capped; reaching
 the cap requires explicit operator cleanup instead of silent eviction. Historical
 inspection never controls the observed machine.
@@ -99,7 +99,7 @@ paths or arbitrary destination supplied by the UI.
 ### F. Refinement and delivery
 
 Accessible named controls, visible keyboard focus, plain-text rendering of all
-untrusted strings, scale-aware native font tokens, bounded virtualized lists,
+untrusted strings, scale-aware native font tokens, limited virtualized lists,
 lightweight canvas lanes and resource traces. No AI raster assets needed: these
 are precise code-native data graphics. Operational documentation, source support
 matrix, threat model, protocol, troubleshooting, release gate, and CI included.
@@ -109,7 +109,7 @@ matrix, threat model, protocol, troubleshooting, release gate, and CI included.
 1. Commit plan/license/repository foundation.
 2. RED: normalization, redaction, provenance, duplicate handling, retention,
    bookmarks, incidents, exact exports, filesystem security. GREEN: core modules.
-3. RED: bounded subprocess adapter, cursor rollback/failure, pressure parser,
+3. RED: limited subprocess adapter, cursor rollback/failure, pressure parser,
    daemon protocol, malformed/oversized input, pause, persistence, shutdown.
    GREEN: recorder and service transport; all tests use isolated state.
 4. RED: pure JS filter/selection/buckets/gaps/comparison and Qt interaction/

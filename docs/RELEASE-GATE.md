@@ -40,7 +40,7 @@ installation/HITL runbook. The new history/draft workflow additionally requires:
    live, source controls, bookmark comparison, saved notes, removal confirmation,
    exact-preview export and expired-token handling with synthetic incidents.
 6. With explicit live-source consent, verify real journal provenance, coverage,
-   pause/resume, bounded gaps, unsupported sources, and no sensitive public logs.
+   pause/resume, limited gaps, unsupported sources, and no sensitive public logs.
 7. Verify recorder continuation when panels close, multiple-owner handling,
    helper restart qualification, clean disable and no orphan helper processes.
 

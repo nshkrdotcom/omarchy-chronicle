@@ -9,7 +9,7 @@ acceptance are pending; see [the release gate](RELEASE-GATE.md).
 2. Search for an application, service, or phrase. Search is literal, not a
    regular expression. Live search queries retained history; the view shows
    the newest 500 matching records. Time-window filtering then applies locally.
-3. Cycle severity, category, and source controls to narrow the evidence.
+3. Cycle severity, category, and source controls to focus the evidence.
 4. Select a timeline marker or row. Its exact recorded identity is inspected.
    Selection and scrolling freeze the view; collection continues in the service.
 5. Review its timestamp, unit, source, boot identity and monotonic timestamp.
@@ -107,7 +107,7 @@ An editor changing the same incident or draft cannot silently overwrite yours.
 **Review latest** displays committed notes, the saved draft, and your local text.
 Explicitly keep your text on the reviewed revision or use committed notes.
 **Discard draft** is confirmed and version-checked. Do not assume unsent text is
-safe after a process crash or storage failure. One bounded draft per incident;
+safe after a process crash or storage failure. One limited draft per incident;
 conflicting editors must reconcile deliberately.
 
 Detailed exports are disabled while local notes are uncommitted. Metadata-only
@@ -116,7 +116,7 @@ with its exact source/boot/monotonic identity even after ordinary history expiry
 Export previews are routed to their requesting cockpit; a newer preview still
 invalidates the helper's previous single-use token, including in another panel.
 
-The Timeline now requests its own bounded history pages, independent of other
+The Timeline now requests its own limited history pages, independent of other
 open cockpits. The interval is applied before the page limit. **Older/Newer**
 traverse matches; Older freezes the interval and receipt membership. **Interval**
 arrows move the time range. **Jump** accepts a real ISO timestamp with an explicit

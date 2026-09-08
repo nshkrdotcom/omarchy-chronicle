@@ -1,4 +1,4 @@
-"""Bounded, shared validation for history requests and durable filter views."""
+"""Limited, shared validation for history requests and durable filter views."""
 import re
 
 FILTERS = {

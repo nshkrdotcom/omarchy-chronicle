@@ -1,4 +1,4 @@
-"""Bounded, allowlisted evidence. Classification does not establish causation."""
+"""Limited, allowlisted evidence. Classification does not establish causation."""
 
 import hashlib
 import json

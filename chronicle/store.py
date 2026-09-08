@@ -1,4 +1,4 @@
-"""Transactional, private and bounded Chronicle state. No observed-system writes."""
+"""Transactional, private and limited Chronicle state. No observed-system writes."""
 
 import hashlib
 import json

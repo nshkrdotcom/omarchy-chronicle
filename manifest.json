@@ -5,7 +5,7 @@
   "version": "0.1.0",
   "author": "nshkrdotcom",
   "license": "MIT",
-  "description": "Local desktop incident flight recorder: provenance-rich timelines, bounded pressure history, bookmarks, comparisons, saved investigations, and previewed private evidence exports.",
+  "description": "Local desktop incident flight recorder: provenance-rich timelines, limited pressure history, bookmarks, comparisons, saved investigations, and previewed private evidence exports.",
   "kinds": ["service", "bar-widget"],
   "keepLoaded": true,
   "entryPoints": {"service": "qml/Service.qml", "barWidget": "qml/BarWidget.qml"},

@@ -8,6 +8,20 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class RepositoryTests(unittest.TestCase):
+    def test_reader_facing_language(self):
+        prohibited = re.compile(r"\b(?:bounded|narrow)\b", re.I)
+        paths = list(ROOT.rglob("*.md")) + list((ROOT / "qml").glob("*.qml"))
+        paths += [ROOT / "manifest.json", ROOT / "chronicle/recorder.py"]
+        for path in paths:
+            self.assertIsNone(prohibited.search(path.read_text()), str(path.relative_to(ROOT)))
+
+    def test_readme_badges_and_license_style(self):
+        readme = (ROOT / "README.md").read_text()
+        for badge in ("[![Version]", "[![License: MIT]", "[![Platform]"):
+            self.assertIn(badge, readme)
+        self.assertTrue(readme.rstrip().endswith(
+            "## License\n\nChronicle is open-source software licensed under the [MIT License](LICENSE)."))
+
     def test_manifest_has_only_native_service_and_bar(self):
         manifest = json.loads((ROOT / "manifest.json").read_text())
         self.assertEqual(manifest["id"], "nshkr.chronicle")

@@ -6,7 +6,7 @@ never reads host sources. `--once` performs one collection, emits a closed-panel
 snapshot, then exits. Stdin EOF, SIGTERM, SIGINT or `shutdown` ends the helper.
 
 Input and output are one JSON object per line. Stdout contains protocol only.
-Input lines are bounded at 16 KiB. Invalid, oversized and deeply nested commands
+Input lines are limited at 16 KiB. Invalid, oversized and deeply nested commands
 produce a safe error and do not authorize arbitrary execution.
 
 ```json
@@ -47,9 +47,9 @@ panels closed. The helper has one active live query, shared by its consumers.
 | `confirm_export` | `token` | Write exact reviewed bytes; return path/hash |
 | `shutdown` | none | Graceful stop |
 
-The QML controller correlates results with bounded pending jobs, drops
+The QML controller correlates results with limited pending jobs, drops
 uncorrelated responses, invalidates pending/preview state on helper session
-change and uses bounded restart backoff. A lost acknowledgement is **not**
+change and uses limited restart backoff. A lost acknowledgement is **not**
 proof that an action failed; refresh state before repeating it. Do not blindly
 retry create/bookmark operations, which can already have committed.
 

@@ -7,7 +7,7 @@ Starting revision `4fdbf08`; feature branch `feat/chronicle-operator-cockpit`.
 No installation, enable/reload or running desktop changes are authorized here.
 
 1. TDD: atomic receipt-sequence schema migration, receipt-based retention,
-   time-bounded keyset history queries, ceiling-stable pagination, full-interval
+   time-filtered keyset history queries, ceiling-stable pagination, full-interval
    density/counts and retention-loss qualification.
 2. TDD: per-cockpit result correlation, historical interval/page navigation,
    bookmark context, named saved views, accessible density graphics. Preserve
@@ -24,7 +24,7 @@ Design references: [SQLite keyset queries](https://www.sqlite.org/rowvalue.html)
 [Qt Quick performance](https://doc.qt.io/qt-6/qtquick-performance.html),
 [Omarchy plugin contract](https://omarchy.org/manual/shell-plugins/).
 
-Prefer bounded, explicit evidence over inferred health or causality. Retention
+Prefer limited, explicit evidence over inferred health or causality. Retention
 may remove frozen-page rows; disclose loss rather than keeping a long read
 transaction open. Draft acknowledgement means durable staging, not committed
 notes. No new data sources, desktop mutations or uploads.

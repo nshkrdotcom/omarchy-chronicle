@@ -84,7 +84,7 @@ class Recorder:
         for journal in self.journals:
             result = journal.read(self.store.cursor(journal.name))
             self.store.ingest(journal.name, result["events"], result["cursor"],
-                              gap_message=journal.name + ": history gap, rejected record or bounded tail; continuity is not established." if result["gap"] else None)
+                              gap_message=journal.name + ": history gap, rejected record or limited tail; continuity is not established." if result["gap"] else None)
             self.source_status(journal.name, result["status"], len(result["events"]))
         if not self.system_journal:
             self.source_status("system-journal", "disabled")

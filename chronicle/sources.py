@@ -1,4 +1,4 @@
-"""Bounded read-only source adapters; no shell interpolation or privileged calls."""
+"""Limited read-only source adapters; no shell interpolation or privileged calls."""
 
 import json
 import os
