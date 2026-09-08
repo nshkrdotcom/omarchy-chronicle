@@ -2,19 +2,22 @@ import QtQuick
 import QtQuick.Controls
 import qs.Commons
 
-TextField {
+TextArea {
     id: root
     readonly property color foreground: Color.popups.text
-    color: Color.popups.text
+    property int maximumCharacters: 4096
+    textFormat: TextEdit.PlainText
+    wrapMode: TextEdit.Wrap
+    color: foreground
     placeholderTextColor: Qt.rgba(foreground.r, foreground.g, foreground.b, 0.55)
     selectionColor: Color.accent
     selectedTextColor: Color.popups.background
     font.family: Style.font.family
     font.pixelSize: Style.font.body
-    padding: Style.space(8)
     selectByMouse: true
-    maximumLength: 200
-    Accessible.name: placeholderText
+    padding: Style.space(8)
+    onTextChanged: if (maximumCharacters > 0 && text.length > maximumCharacters)
+        text = text.slice(0, maximumCharacters)
     background: Rectangle {
         color: Color.popups.background
         radius: Style.cornerRadius

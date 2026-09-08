@@ -137,3 +137,18 @@ All implemented milestones have passing isolated tests, committed/pushed code,
 documented limitations, and a runnable fixture demonstration. Installed native
 acceptance remains a separate release gate, not a reason to change the current
 desktop or pretend this environment proves Wayland behavior.
+
+## Build status after implementation
+
+The recorder, cockpit, three pressure lenses, source filters, bookmarks with
+measurement-age provenance, readable A/B comparison, durable incident workspaces,
+notes, pinned evidence and exact-preview export are implemented. The full service
+transport also runs in isolated windowless Quickshell against synthetic Python
+state. Source failures and gap qualifications are covered by regression tests;
+gap markers commit atomically with accepted events and cursor advancement.
+
+The UI follows the inspected Omarchy/Tactical Display conventions. Offscreen
+tests cover title sizing, header placement, caption changes, keyboard behavior,
+identity stability, and frozen-chart theme repaint. Actual installed appearance
+comparison remains pending. See TESTING.md for evidence and RELEASE-GATE.md for
+the coordinated native matrix; neither is replaced by a synthetic soak.

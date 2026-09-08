@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 import unittest
 
@@ -18,7 +19,7 @@ class RepositoryTests(unittest.TestCase):
         self.assertIn("Copyright (c) 2026 nshkrdotcom", (ROOT / "LICENSE").read_text())
 
     def test_native_host_contract(self):
-        panel = (ROOT / "qml/Panel.qml").read_text()
+        panel = re.sub(r"\s+", "", (ROOT / "qml/Panel.qml").read_text())
         for token in ("Ui.Panel", "Ui.KeyboardPanel", "padding:Style.space(8)",
                       "fittedContentWidth(Style.space(1280))", "cappedContentHeight(Style.space(840))"):
             self.assertIn(token, panel)

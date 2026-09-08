@@ -65,3 +65,8 @@ function comparisonText(result) {
     if(result.b.observed_us)lines.push("B measured: "+timestamp(result.b.observed_us));
     return lines.join("\n");
 }
+function sampleIndex(samples,time) {
+    var best=-1;
+    (samples||[]).forEach(function(sample,index){if(best<0 || Math.abs(sample.time_us-time)<Math.abs(samples[best].time_us-time))best=index;});
+    return best;
+}

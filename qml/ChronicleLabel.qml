@@ -1,5 +1,6 @@
 import QtQuick
 import qs.Commons
+
 Text {
     textFormat: Text.PlainText
     color: Color.popups.text

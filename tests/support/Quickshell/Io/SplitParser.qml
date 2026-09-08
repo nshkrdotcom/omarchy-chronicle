@@ -1,2 +1,5 @@
 import QtQuick
-QtObject { signal read(string line) }
+
+QtObject {
+    signal read(string line)
+}

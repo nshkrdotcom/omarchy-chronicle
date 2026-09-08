@@ -61,3 +61,8 @@ test('comparison is operator-readable with signed units and missing qualificatio
     assert.match(text,/-1024.*KiB/);
     assert.match(text,/Unavailable/);
 });
+test('sample inspection includes explicit missing observations', () => {
+    const samples=[{time_us:10,values:{cpu_some_avg10:0}},{time_us:20,values:{cpu_some_avg10:null}}];
+    assert.equal(M.sampleIndex(samples,18),1);
+    assert.equal(M.sampleIndex([],18),-1);
+});

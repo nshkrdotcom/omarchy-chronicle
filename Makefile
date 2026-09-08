@@ -16,3 +16,5 @@ integration:
 	python3 scripts/integration.py
 live-readonly:
 	python3 scripts/live_readonly.py
+soak:
+	python3 scripts/soak.py

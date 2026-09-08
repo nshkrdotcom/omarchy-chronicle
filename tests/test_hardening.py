@@ -113,3 +113,13 @@ class HardeningTests(unittest.TestCase):
         self.assertTrue(response["gap"])
         self.assertEqual(len(response["events"]),200)
         self.assertEqual(response["cursor"],"200")
+
+    def test_gap_evidence_commits_in_same_transaction_as_cursor(self):
+        self.store.ingest("user-journal", [], "next", gap_message="Bounded tail gap")
+        self.assertEqual(self.store.cursor("user-journal"), "next")
+        self.assertEqual(self.store.events()[0]["message"], "Bounded tail gap")
+        self.assertEqual(self.store.events()[0]["source"], "recorder")
+        with self.assertRaises(KeyError):
+            self.store.ingest("user-journal", [{}], "bad", gap_message="Must roll back")
+        self.assertEqual(self.store.cursor("user-journal"), "next")
+        self.assertEqual(len(self.store.events()), 1)

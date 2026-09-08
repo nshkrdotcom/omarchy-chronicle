@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import tempfile
 
@@ -28,10 +29,21 @@ with tempfile.TemporaryDirectory(prefix="chronicle-transport-") as directory:
                QT_QPA_PLATFORMTHEME="", QT_QUICK_CONTROLS_STYLE="Basic", QT_STYLE_OVERRIDE="Fusion",
                XDG_RUNTIME_DIR=str(runtime), XDG_CACHE_HOME=str(work / "cache"),
                XDG_CONFIG_HOME=str(work / "config"), XDG_STATE_HOME=str(work / "state-home"))
-    result = subprocess.run(["quickshell", "--no-color", "--path", str(work / "shell.qml")],
-                            env=env, text=True, capture_output=True, timeout=25)
-    output = result.stdout + result.stderr
-    if result.returncode or "CHRONICLE_INTEGRATION_OK" not in output or "CHRONICLE_INTEGRATION_ERROR" in output:
+    child = subprocess.Popen(["quickshell", "--no-color", "--path", str(work / "shell.qml")],
+                             env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             start_new_session=True)
+    try:
+        stdout, stderr = child.communicate(timeout=25)
+    except subprocess.TimeoutExpired:
+        os.killpg(child.pid, signal.SIGTERM)
+        try:
+            child.communicate(timeout=3)
+        except subprocess.TimeoutExpired:
+            os.killpg(child.pid, signal.SIGKILL)
+            child.communicate()
+        raise SystemExit("Isolated transport timed out; its owned process group was stopped.")
+    output = stdout + stderr
+    if child.returncode or "CHRONICLE_INTEGRATION_OK" not in output or "CHRONICLE_INTEGRATION_ERROR" in output:
         print(output)
         raise SystemExit("Isolated Quickshell transport failed.")
     exports = list((work / "state/exports").glob("*.json"))

@@ -29,7 +29,7 @@ Button {
     }
     background: Rectangle {
         radius: Style.cornerRadius
-        color: root.chosen ? Color.accent : root.hovered ? Qt.rgba(0.5,0.5,0.5,0.15) : "transparent"
+        color: root.chosen ? Color.accent : root.hovered ? Qt.rgba(0.5, 0.5, 0.5, 0.15) : "transparent"
         border.width: root.activeFocus ? Style.space(2) : Style.spacing.hairline
         border.color: root.activeFocus ? (root.chosen ? Color.popups.text : Color.accent) : Color.popups.border
     }

@@ -75,7 +75,7 @@ class Store:
         row = self.db.execute("SELECT cursor FROM cursors WHERE source=?", (source,)).fetchone()
         return row[0] if row else None
 
-    def ingest(self, source, events, cursor=None):
+    def ingest(self, source, events, cursor=None, gap_message=None):
         if len(events) > 1000:
             raise ValueError("batch exceeds limit")
         with self.db:
@@ -85,15 +85,23 @@ class Store:
                 self.db.execute("INSERT OR IGNORE INTO events VALUES(?,?,?,?,?,?)",
                                 (event["id"], event["time_us"], source, event["category"],
                                  event["severity"], encode(event)))
+            if gap_message:
+                gap = self._internal_event(gap_message, severity="warning")
+                self.db.execute("INSERT INTO events VALUES(?,?,?,?,?,?)",
+                                (gap["id"], gap["time_us"], gap["source"], gap["category"],
+                                 gap["severity"], encode(gap)))
             if cursor is not None:
                 self.db.execute("INSERT OR REPLACE INTO cursors VALUES(?,?)", (source, cursor))
             self.db.execute("DELETE FROM events WHERE time_us < ?", (self.now() - 7 * 86400_000_000,))
             self.db.execute("DELETE FROM events WHERE id NOT IN (SELECT id FROM events ORDER BY time_us DESC, id DESC LIMIT ?)", (self.event_limit,))
 
-    def record(self, message, category="recorder", severity="info"):
-        event = {"id": uuid.uuid4().hex, "time_us": self.now(), "source": "recorder",
+    def _internal_event(self, message, category="recorder", severity="info"):
+        return {"id": uuid.uuid4().hex, "time_us": self.now(), "source": "recorder",
                  "category": category, "severity": severity, "message": redact(message),
                  "unit": "Chronicle", "cursor": None, "boot": None, "monotonic_us": None}
+
+    def record(self, message, category="recorder", severity="info"):
+        event = self._internal_event(message, category, severity)
         self.ingest("recorder", [event])
         return event
 
@@ -261,4 +269,9 @@ class Store:
             stream.write(preview[1])
             stream.flush()
             os.fsync(stream.fileno())
+        directory_fd = os.open(folder, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
         return {"path": str(path), "sha256": hashlib.sha256(preview[1].encode()).hexdigest()}
