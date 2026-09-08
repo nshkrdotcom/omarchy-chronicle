@@ -1,0 +1,53 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const context = vm.createContext({});
+vm.runInContext(fs.readFileSync('qml/Timeline.js', 'utf8'), context);
+const M = context;
+const event = (id, time, severity = 'info') => ({id, time_us: time, severity, category: 'service', unit: 'worker', message: 'example'});
+
+test('filter combines literal text, category, severity and time', () => {
+    const rows = [event('a', 10), event('b', 20, 'error')];
+    assert.equal(M.filter(rows, {search:'WORK', severity:'error', from:0, to:30}).length, 1);
+    assert.equal(M.filter(rows, {search:'%'}).length, 0);
+    assert.equal(M.filter(rows, {category:'audio'}).length, 0);
+    assert.equal(M.filter(rows, {from:11,to:20})[0].id, 'b');
+});
+test('selection is exact identity, never silently another row', () => {
+    assert.equal(M.selected([event('a', 10)], 'gone'), null);
+    assert.equal(M.selected([event('a', 10)], 'a').id, 'a');
+});
+test('time projection clamps edges and rejects invalid span', () => {
+    assert.equal(M.position(15, 10, 20, 100), 50);
+    assert.equal(M.position(30, 10, 20, 100), 100);
+    assert.equal(M.position(15, 10, 10, 100), null);
+});
+test('buckets count actual observations and errors independently', () => {
+    const buckets = M.buckets([event('a',10),event('b',20,'error'),event('c',20,'error')],0,100,10);
+    assert.equal(buckets[2].count,2);
+    assert.equal(buckets[2].errors,2);
+    assert.equal(buckets[0].count,0);
+});
+test('nearest event selection never crosses outside the view', () => {
+    assert.equal(M.nearest([event('a',10),event('b',90)],85,20,100).id,'b');
+    assert.equal(M.nearest([event('a',10)],85,20,100),null);
+});
+test('resource lines break for missing samples and clock reversals', () => {
+    const samples = [
+        {time_us:1,values:{x:0}}, {time_us:2,values:{x:2}},
+        {time_us:3,values:{x:null}}, {time_us:4,values:{x:4}},
+        {time_us:20_000_000,values:{x:5}}, {time_us:5,values:{x:6}}
+    ];
+    assert.equal(M.segments(samples,'x').length,4);
+    assert.equal(M.segments(samples,'x')[0][0].value,0);
+});
+test('missing sources and stale snapshots are not healthy', () => {
+    assert.equal(M.health({time_us:10,sources:[]},10),'NO SOURCES');
+    assert.equal(M.health({time_us:10,sources:[{status:'ok'}]},20_000_000),'STALE');
+    assert.equal(M.health({time_us:10,paused:true,sources:[{status:'ok'}]},10),'PAUSED');
+    assert.equal(M.health({time_us:10,sources:[{status:'timeout'}]},10),'DEGRADED');
+});
+test('range follows live clock, frozen range is independent', () => {
+    assert.equal(M.windowStart(1_000_000_000,5),700_000_000);
+});
