@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import qs.Commons
+import qs.Commons as Native
 import "Timeline.js" as Model
 
 ChronicleDialog {
@@ -43,8 +44,8 @@ ChronicleDialog {
     font.family: Style.font.family
     font.pixelSize: Style.font.body
     background: Rectangle {
-        color: Color.popups.background
-        border.color: Color.popups.border
+        color: Native.Color.popups.background
+        border.color: Native.Color.popups.border
     }
     onClosed: query.reset()
     InvestigationController {
@@ -105,7 +106,7 @@ ChronicleDialog {
             Layout.fillWidth: true
             wrapMode: Text.Wrap
             font.pixelSize: Style.font.caption
-            color: query.error ? Color.urgent : Color.popups.text
+            color: query.error ? Native.Color.urgent : Native.Color.popups.text
             text: query.error || (query.busy ? "Loading surroundings…" : query.result ? query.result.shown_before + "/" + query.result.before_count + " earlier · selected event · " + query.result.shown_after + "/" + query.result.after_count + " later · closest 30 each side" + (query.result.truncated ? " · more events exist in this radius" : "") : "No result")
         }
         ListView {

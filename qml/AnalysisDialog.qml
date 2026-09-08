@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import qs.Commons
+import qs.Commons as Native
 import "Timeline.js" as Model
 
 ChronicleDialog {
@@ -35,8 +36,8 @@ ChronicleDialog {
     font.family: Style.font.family
     font.pixelSize: Style.font.body
     background: Rectangle {
-        color: Color.popups.background
-        border.color: Color.popups.border
+        color: Native.Color.popups.background
+        border.color: Native.Color.popups.border
     }
     onClosed: query.reset()
     InvestigationController {
@@ -87,7 +88,7 @@ ChronicleDialog {
             Layout.fillWidth: true
             wrapMode: Text.Wrap
             font.pixelSize: Style.font.caption
-            color: query.error ? Color.urgent : Color.accent
+            color: query.error ? Native.Color.urgent : Native.Color.accent
             text: query.error || (query.busy ? "Counting all matching retained events…" : query.result ? query.result.current_count + " current / " + query.result.previous_count + " previous events · " + query.result.groups.length + "/" + query.result.group_count + " groups shown" + (query.result.truncated ? " · highest-ranked 50 only" : "") + " · bars share 0–" + root.peak + " count scale" : "No result")
         }
         ListView {
@@ -130,13 +131,13 @@ ChronicleDialog {
                             Rectangle {
                                 width: parent.width * row.modelData.previous / root.peak
                                 height: Style.space(3)
-                                color: Color.popups.text
+                                color: Native.Color.popups.text
                                 opacity: 0.5
                             }
                             Rectangle {
                                 width: parent.width * row.modelData.current / root.peak
                                 height: Style.space(3)
-                                color: Color.accent
+                                color: Native.Color.accent
                             }
                         }
                     }

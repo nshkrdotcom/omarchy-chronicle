@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import qs.Commons
+import qs.Commons as Native
 import "Timeline.js" as Model
 
 FocusScope {
@@ -267,7 +268,7 @@ FocusScope {
     }
     Rectangle {
         anchors.fill: parent
-        color: Color.popups.background
+        color: Native.Color.popups.background
     }
     ColumnLayout {
         anchors.fill: parent
@@ -287,7 +288,7 @@ FocusScope {
                 }
                 ChronicleLabel {
                     text: root.status + (root.frozen ? " · FROZEN VIEW" : " · LIVE VIEW")
-                    color: root.status === "RECORDING" ? Color.accent : Color.urgent
+                    color: root.status === "RECORDING" ? Native.Color.accent : Native.Color.urgent
                     font.pixelSize: Style.font.caption
                 }
             }
@@ -362,7 +363,7 @@ FocusScope {
         Rectangle {
             Layout.fillWidth: true
             implicitHeight: Style.spacing.hairline
-            color: Color.popups.border
+            color: Native.Color.popups.border
         }
         RowLayout {
             Layout.fillWidth: true
@@ -470,7 +471,7 @@ FocusScope {
                 ChronicleLabel {
                     Layout.fillWidth: true
                     font.pixelSize: Style.font.caption
-                    color: browser.retentionChanged || browser.error ? Color.urgent : Color.popups.text
+                    color: browser.retentionChanged || browser.error ? Native.Color.urgent : Native.Color.popups.text
                     text: browser.error || (browser.retentionChanged ? "Retention changed since page one; some evidence may have expired. " : "") + (browser.result ? "Page " + (browser.pageIndex + 1) + " · " + root.visibleEvents.length + " loaded / " + browser.result.matching_count + " matching retained events" : browser.busy ? "Loading retained evidence…" : "No historical query result")
                 }
                 HistoryDensity {
@@ -553,7 +554,7 @@ FocusScope {
                     Rectangle {
                         Layout.fillHeight: true
                         implicitWidth: Style.spacing.hairline
-                        color: Color.popups.border
+                        color: Native.Color.popups.border
                     }
                     ScrollView {
                         Layout.fillHeight: true
@@ -564,7 +565,7 @@ FocusScope {
                             width: parent.width
                             ChronicleLabel {
                                 text: "EVIDENCE"
-                                color: Color.accent
+                                color: Native.Color.accent
                                 font.pixelSize: Style.font.caption
                             }
                             ChronicleLabel {
@@ -737,7 +738,7 @@ FocusScope {
                     ChronicleLabel {
                         Layout.fillWidth: true
                         text: root.currentIncident ? root.currentIncident.title + " · " + root.currentIncident.status : "Select or create an incident"
-                        color: Color.accent
+                        color: Native.Color.accent
                     }
                     ScrollView {
                         Layout.fillWidth: true
@@ -757,7 +758,7 @@ FocusScope {
                         Layout.fillWidth: true
                         wrapMode: Text.Wrap
                         font.pixelSize: Style.font.caption
-                        color: editor.error || editor.conflict ? Color.urgent : Color.accent
+                        color: editor.error || editor.conflict ? Native.Color.urgent : Native.Color.accent
                         text: editor.stateText
                     }
                     RowLayout {
@@ -874,7 +875,7 @@ FocusScope {
                         Layout.fillWidth: true
                         wrapMode: Text.Wrap
                         text: "SOURCE COVERAGE"
-                        color: Color.accent
+                        color: Native.Color.accent
                     }
                     ChronicleLabel {
                         Layout.fillWidth: true
@@ -929,7 +930,7 @@ FocusScope {
         ChronicleLabel {
             Layout.fillWidth: true
             font.pixelSize: Style.font.caption
-            color: root.service && (root.service.lastError || root.live.storage_error) ? Color.urgent : Color.accent
+            color: root.service && (root.service.lastError || root.live.storage_error) ? Native.Color.urgent : Native.Color.accent
             text: editor.error || (root.service ? (root.service.lastError || root.live.storage_error || root.service.lastAction || "Local evidence · correlation is not causation · no automatic repairs") : "Waiting for Chronicle service")
         }
     }
@@ -948,8 +949,8 @@ FocusScope {
         font.family: Style.font.family
         font.pixelSize: Style.font.body
         background: Rectangle {
-            color: Color.popups.background
-            border.color: Color.popups.border
+            color: Native.Color.popups.background
+            border.color: Native.Color.popups.border
         }
         ColumnLayout {
             width: parent.width
@@ -991,8 +992,8 @@ FocusScope {
         font.family: Style.font.family
         font.pixelSize: Style.font.body
         background: Rectangle {
-            color: Color.popups.background
-            border.color: Color.popups.border
+            color: Native.Color.popups.background
+            border.color: Native.Color.popups.border
         }
         ColumnLayout {
             anchors.fill: parent
@@ -1103,8 +1104,8 @@ FocusScope {
         font.family: Style.font.family
         font.pixelSize: Style.font.body
         background: Rectangle {
-            color: Color.popups.background
-            border.color: Color.popups.border
+            color: Native.Color.popups.background
+            border.color: Native.Color.popups.border
         }
         ChronicleLabel {
             width: parent.width
@@ -1131,8 +1132,8 @@ FocusScope {
         font.family: Style.font.family
         font.pixelSize: Style.font.body
         background: Rectangle {
-            color: Color.popups.background
-            border.color: Color.popups.border
+            color: Native.Color.popups.background
+            border.color: Native.Color.popups.border
         }
         ChronicleLabel {
             width: parent.width
@@ -1152,8 +1153,8 @@ FocusScope {
         font.family: Style.font.family
         font.pixelSize: Style.font.body
         background: Rectangle {
-            color: Color.popups.background
-            border.color: Color.popups.border
+            color: Native.Color.popups.background
+            border.color: Native.Color.popups.border
         }
         ColumnLayout {
             anchors.fill: parent
@@ -1201,8 +1202,8 @@ FocusScope {
         font.family: Style.font.family
         font.pixelSize: Style.font.body
         background: Rectangle {
-            color: Color.popups.background
-            border.color: Color.popups.border
+            color: Native.Color.popups.background
+            border.color: Native.Color.popups.border
         }
         ScrollView {
             anchors.fill: parent
@@ -1225,8 +1226,8 @@ FocusScope {
         font.family: Style.font.family
         font.pixelSize: Style.font.body
         background: Rectangle {
-            color: Color.popups.background
-            border.color: Color.popups.border
+            color: Native.Color.popups.background
+            border.color: Native.Color.popups.border
         }
         ColumnLayout {
             anchors.fill: parent

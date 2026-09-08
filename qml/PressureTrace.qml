@@ -1,5 +1,6 @@
 import QtQuick
 import qs.Commons
+import qs.Commons as Native
 import "Timeline.js" as Model
 
 Item {
@@ -9,9 +10,9 @@ Item {
     property real toUs: 1
     property string metric: "cpu_some_avg10"
     property int inspectedIndex: -1
-    readonly property color chartAccent: Color.accent
-    readonly property color chartLine: Color.popups.border
-    readonly property color chartForeground: Color.popups.text
+    readonly property color chartAccent: Native.Color.accent
+    readonly property color chartLine: Native.Color.popups.border
+    readonly property color chartForeground: Native.Color.popups.text
     onChartAccentChanged: chart.requestPaint()
     onChartLineChanged: chart.requestPaint()
     onChartForegroundChanged: chart.requestPaint()
@@ -63,10 +64,10 @@ Item {
         onPaint: {
             var ctx = getContext("2d");
             ctx.reset();
-            ctx.strokeStyle = Color.popups.border;
+            ctx.strokeStyle = Native.Color.popups.border;
             ctx.strokeRect(0, 0, width, height);
-            ctx.strokeStyle = Color.accent;
-            ctx.fillStyle = Color.accent;
+            ctx.strokeStyle = Native.Color.accent;
+            ctx.fillStyle = Native.Color.accent;
             ctx.lineWidth = 1.5;
             Model.segments(root.visibleSamples, root.metric).forEach(function (segment) {
                 ctx.beginPath();
@@ -86,7 +87,7 @@ Item {
             });
             if (root.inspected) {
                 var x = Model.position(root.inspected.time_us, root.fromUs, root.toUs, width);
-                ctx.strokeStyle = Color.popups.text;
+                ctx.strokeStyle = Native.Color.popups.text;
                 ctx.beginPath();
                 ctx.moveTo(x, 0);
                 ctx.lineTo(x, height);
@@ -97,7 +98,7 @@ Item {
     Rectangle {
         anchors.fill: chart
         color: "transparent"
-        border.color: Color.accent
+        border.color: Native.Color.accent
         border.width: root.activeFocus ? Style.space(2) : 0
     }
     MouseArea {

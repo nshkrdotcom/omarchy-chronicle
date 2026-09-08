@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Commons
+import qs.Commons as Native
 import "Timeline.js" as Model
 
 Item {
@@ -17,10 +18,10 @@ Item {
     onFromUsChanged: canvas.requestPaint()
     onToUsChanged: canvas.requestPaint()
     onSelectedIdChanged: canvas.requestPaint()
-    readonly property color chartAccent: Color.accent
-    readonly property color chartUrgent: Color.urgent
-    readonly property color chartLine: Color.popups.border
-    readonly property color chartForeground: Color.popups.text
+    readonly property color chartAccent: Native.Color.accent
+    readonly property color chartUrgent: Native.Color.urgent
+    readonly property color chartLine: Native.Color.popups.border
+    readonly property color chartForeground: Native.Color.popups.text
     onChartAccentChanged: canvas.requestPaint()
     onChartUrgentChanged: canvas.requestPaint()
     onChartLineChanged: canvas.requestPaint()
@@ -46,7 +47,7 @@ Item {
             ctx.reset();
             var span = width - root.labelWidth;
             for (var i = 0; i < Model.categories.length; i++) {
-                ctx.strokeStyle = Color.popups.border;
+                ctx.strokeStyle = Native.Color.popups.border;
                 ctx.beginPath();
                 ctx.moveTo(root.labelWidth, (i + 1) * root.laneHeight);
                 ctx.lineTo(width, (i + 1) * root.laneHeight);
@@ -61,7 +62,7 @@ Item {
                     return;
                 var x = root.labelWidth + Model.position(e.time_us, root.fromUs, root.toUs, span - 6);
                 var y = (lane + 0.5) * root.laneHeight;
-                ctx.fillStyle = e.severity === "error" ? Color.urgent : e.severity === "warning" ? "#e7bc72" : Color.accent;
+                ctx.fillStyle = e.severity === "error" ? Native.Color.urgent : e.severity === "warning" ? "#e7bc72" : Native.Color.accent;
                 ctx.beginPath();
                 if (e.severity === "error") {
                     ctx.moveTo(x, y - 5);
@@ -78,7 +79,7 @@ Item {
                     ctx.arc(x, y, 3, 0, Math.PI * 2);
                 ctx.fill();
                 if (e.id === root.selectedId) {
-                    ctx.strokeStyle = Color.popups.text;
+                    ctx.strokeStyle = Native.Color.popups.text;
                     ctx.strokeRect(x - 7, y - 7, 14, 14);
                 }
             });

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import qs.Commons
+import qs.Commons as Native
 
 Button {
     id: root
@@ -18,7 +19,7 @@ Button {
     contentItem: Text {
         text: root.text
         textFormat: Text.PlainText
-        color: root.chosen ? Color.popups.background : Color.popups.text
+        color: root.chosen ? Native.Color.popups.background : Native.Color.popups.text
         opacity: root.enabled ? 1 : 0.45
         font.family: Style.font.family
         font.pixelSize: Style.font.caption
@@ -29,9 +30,9 @@ Button {
     }
     background: Rectangle {
         radius: Style.cornerRadius
-        color: root.chosen ? Color.accent : root.hovered ? Qt.rgba(0.5, 0.5, 0.5, 0.15) : "transparent"
+        color: root.chosen ? Native.Color.accent : root.hovered ? Qt.rgba(0.5, 0.5, 0.5, 0.15) : "transparent"
         border.width: root.activeFocus ? Style.space(2) : Style.spacing.hairline
-        border.color: root.activeFocus ? (root.chosen ? Color.popups.text : Color.accent) : Color.popups.border
+        border.color: root.activeFocus ? (root.chosen ? Native.Color.popups.text : Native.Color.accent) : Native.Color.popups.border
     }
     ToolTip.visible: hovered && hint.length > 0
     ToolTip.text: hint

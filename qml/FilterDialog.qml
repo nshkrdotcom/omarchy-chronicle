@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import qs.Commons
+import qs.Commons as Native
 
 ChronicleDialog {
     id: root
@@ -28,8 +29,8 @@ ChronicleDialog {
     font.family: Style.font.family
     font.pixelSize: Style.font.body
     background: Rectangle {
-        color: Color.popups.background
-        border.color: Color.popups.border
+        color: Native.Color.popups.background
+        border.color: Native.Color.popups.border
     }
     ColumnLayout {
         anchors.fill: parent
@@ -74,7 +75,7 @@ ChronicleDialog {
             Layout.fillWidth: true
             wrapMode: Text.Wrap
             font.pixelSize: Style.font.caption
-            color: root.valid ? Color.popups.text : Color.urgent
+            color: root.valid ? Native.Color.popups.text : Native.Color.urgent
             text: root.valid ? root.terms.length + "/8 phrases · 200 characters each · case-insensitive · no regex or wildcard syntax" : "Use up to eight phrases, with no more than 200 characters in each."
         }
         RowLayout {

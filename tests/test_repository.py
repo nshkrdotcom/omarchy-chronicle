@@ -22,6 +22,10 @@ class RepositoryTests(unittest.TestCase):
         self.assertTrue(readme.rstrip().endswith(
             "## License\n\nChronicle is open-source software licensed under the [MIT License](LICENSE)."))
 
+    def test_popup_colors_cannot_resolve_to_qt_controls_internal_color_type(self):
+        for path in (ROOT / "qml").glob("*.qml"):
+            self.assertIsNone(re.search(r"(?<![\w.])Color\.", path.read_text()), path.name)
+
     def test_manifest_has_only_native_service_and_bar(self):
         manifest = json.loads((ROOT / "manifest.json").read_text())
         self.assertEqual(manifest["id"], "nshkr.chronicle")

@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Commons
+import qs.Commons as Native
 import "Timeline.js" as Model
 
 Item {
@@ -41,17 +42,17 @@ Item {
                 height: bars.height
                 color: "transparent"
                 border.width: root.inspectedIndex === index ? 1 : 0
-                border.color: Color.popups.text
+                border.color: Native.Color.popups.text
                 Rectangle {
                     width: parent.width
                     anchors.bottom: parent.bottom
                     height: Math.max(1, binItem.modelData.count / root.peak * (bars.height - 2))
-                    color: binItem.modelData.count ? Color.accent : Color.popups.border
+                    color: binItem.modelData.count ? Native.Color.accent : Native.Color.popups.border
                     Rectangle {
                         width: parent.width
                         anchors.bottom: parent.bottom
                         height: binItem.modelData.count ? parent.height * binItem.modelData.errors / binItem.modelData.count : 0
-                        color: Color.urgent
+                        color: Native.Color.urgent
                     }
                 }
                 MouseArea {
