@@ -92,3 +92,21 @@ normal typing so spaces in a search/notes do not freeze the cockpit.
 Closing the panel is not pausing the recorder. Header fonts and top-right
 action alignment are shared across invocation routes; no overlay alternative
 exists. Styling derives from Omarchy's native popup and font tokens.
+# Historical exploration and saved views
+
+The Timeline now requests its own bounded history pages, independent of other
+open cockpits. The interval is applied before the page limit. **Older/Newer**
+traverse matches; Older freezes the interval and receipt membership. **Interval**
+arrows move the time range. A bookmark's **Context** opens a centered historical
+interval. The existing **Live** header control returns to the present.
+
+The density strip counts every matching retained event in the interval; the
+lanes and list show only the loaded page (200 rows normally). Tab and arrow keys
+expose density counts without relying on color. Changed retention is explicitly
+qualified: a frozen receipt ceiling is not an immutable evidence archive.
+Pin important events to an incident to retain copies.
+
+**Views** offers All evidence, Errors, Audio and Network presets, plus up to 20
+named durable filters. It saves search, source/category/severity and window
+length, not the page or historical anchor. Saved labels/search are redacted:
+review restored text if a search looked like a secret.

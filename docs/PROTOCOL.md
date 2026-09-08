@@ -58,6 +58,11 @@ shell IPC API. Unknown commands are rejected. No command accepts a shell
 program, service-management operation or arbitrary export destination.
 # Historical investigation requests (additive protocol 1)
 
+`save_view`: `label` (100 characters), filters as below and `window_minutes`
+1..10080. Returns a durable view with generated ID; at most 20. `remove_view`:
+exact `id`. Snapshots include `saved_views`. Labels/search are redacted before
+persistence; transient cursor/anchor/ceiling fields are not stored.
+
 `history`: `from_us`/`to_us` inclusive, nonnegative JSON-safe integers;
 `limit` 1..500 (default 200); optional literal `search` (200 characters),
 `severity`, `category`, `source`. Returns `events`, `matching_count`, 48 density

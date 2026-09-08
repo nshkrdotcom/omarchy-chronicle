@@ -23,6 +23,16 @@ Item {
     property var panelOwners: ({})
     readonly property bool daemonRunning: daemon.running
     readonly property string pluginRoot: manifest && manifest.__sourceDir ? String(manifest.__sourceDir) : ""
+    signal completed(string requestId, string command, var result, string error)
+    signal restarted
+
+    function failPending(reason) {
+        var jobs = pending;
+        pending = ({});
+        Object.keys(jobs).forEach(function (id) {
+            root.completed(id, jobs[id].cmd, null, reason);
+        });
+    }
 
     function setPanelOpen(owner, opened) {
         var next = Object.assign({}, panelOwners);
@@ -67,7 +77,8 @@ Item {
                     incident = null;
                     comparison = null;
                     preview = null;
-                    pending = ({});
+                    failPending("Recorder restarted; reload the investigation.");
+                    restarted();
                     lastAction = "Recorder restarted; selections need review.";
                 }
                 snapshot = data;
@@ -75,10 +86,14 @@ Item {
                 return;
             }
             if (data.type === "error") {
+                var failed = pending[data.request_id];
+                if (!failed)
+                    return;
                 lastError = String(data.error || "Request failed");
                 var errors = Object.assign({}, pending);
                 delete errors[data.request_id];
                 pending = errors;
+                completed(data.request_id, failed.cmd, null, lastError);
                 return;
             }
             var job = pending[data.request_id];
@@ -89,9 +104,11 @@ Item {
             pending = next;
             if (!data.ok) {
                 lastError = "Request rejected";
+                completed(data.request_id, job.cmd, null, lastError);
                 return;
             }
             lastError = "";
+            completed(data.request_id, job.cmd, data.result, "");
             if (["create_incident", "incident", "update_incident", "pin", "unpin"].indexOf(job.cmd) >= 0) {
                 incident = data.result;
                 if (job.cmd === "create_incident" && job.args.pin_event_id)
@@ -111,7 +128,7 @@ Item {
             if (job.cmd === "confirm_export") {
                 preview = null;
                 lastAction = "Saved reviewed evidence: " + data.result.path;
-            } else if (["panel", "query", "incident"].indexOf(job.cmd) < 0)
+            } else if (["panel", "query", "history", "incident", "stage_draft"].indexOf(job.cmd) < 0)
                 lastAction = job.cmd.replace(/_/g, " ") + " completed.";
         } catch (error) {
             lastError = "Invalid helper response; no result accepted.";
@@ -139,7 +156,7 @@ Item {
             });
         })
         onExited: function (code) {
-            root.pending = ({});
+            root.failPending("Recorder stopped; refresh before retrying.");
             root.preview = null;
             if (root.shuttingDown)
                 return;
@@ -162,6 +179,7 @@ Item {
             var next = Object.assign({}, root.pending);
             Object.keys(next).forEach(function (id) {
                 if (Date.now() - next[id].sent > 30000) {
+                    root.completed(id, next[id].cmd, null, "Request timed out; refresh before retrying.");
                     delete next[id];
                     root.lastError = "Request timed out. Refresh before repeating an action.";
                 }

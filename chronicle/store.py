@@ -10,7 +10,7 @@ import time
 import uuid
 
 from .evidence import METRICS, metrics, redact
-from .history import query as history_query
+from .history import query as history_query, filters, integer
 
 
 def encode(value):
@@ -204,6 +204,25 @@ class Store:
 
     def bookmarks(self):
         return self._list("bookmarks")
+
+    def saved_views(self):
+        return self.setting("saved_views", [])
+
+    def save_view(self, label, options):
+        if not isinstance(label, str) or len(label) > 100:
+            raise ValueError("invalid view label")
+        view = filters(options)
+        view.update(id=uuid.uuid4().hex, label=redact(label, 100) or "Saved view",
+                    window_minutes=integer(options.get("window_minutes", 5), "window_minutes", 1, 10080))
+        view["search"] = redact(view["search"], 200)
+        views = self.saved_views()
+        if len(views) >= 20:
+            raise ValueError("saved view limit reached (20); remove one first")
+        self.set_setting("saved_views", views + [view])
+        return view
+
+    def remove_view(self, ident):
+        self.set_setting("saved_views", [view for view in self.saved_views() if view["id"] != ident])
 
     def bookmark(self, label, values, observed_us=None):
         if len(self.bookmarks()) >= 256:

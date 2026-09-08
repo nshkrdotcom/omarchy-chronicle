@@ -18,11 +18,12 @@ function position(time, from, to, width) {
 }
 function buckets(rows, from, to, count) {
     count = Math.max(1, Math.min(200, Math.floor(count || 1)));
-    var result = Array.from({length:count}, function() { return {count:0, errors:0}; });
+    var result = Array.from({length:count}, function() { return {count:0, errors:0, warnings:0}; });
     if (!(to > from)) return result;
     filter(rows, {from:from,to:to}).forEach(function(e) {
         var bin = result[Math.min(count - 1, Math.floor(position(e.time_us,from,to,count)))];
         bin.count++; if (e.severity === "error") bin.errors++;
+        if (e.severity === "warning") bin.warnings++;
     });
     return result;
 }

@@ -60,11 +60,18 @@ TestCase {
         anchors.fill: parent
         service: fake
         nowUs: 1000000000
+        viewActive: false
     }
     function init() {
         cockpit.page = 0;
         cockpit.frozen = false;
         cockpit.selectedId = "";
+        cockpit.anchorUs = 0;
+        cockpit.severity = "all";
+        cockpit.category = "all";
+        cockpit.sourceFilter = "all";
+        cockpit.windowMinutes = 5;
+        cockpit.historyModel.reset();
         sent = [];
     }
     function test_native_header_contract() {
@@ -74,6 +81,46 @@ TestCase {
         fuzzyCompare(title.font.letterSpacing, 0.4, 0.02);
         const actions = findChild(cockpit, "headerActions");
         verify(actions.x > title.x + title.width);
+    }
+    function test_bookmark_context_is_centered_and_frozen() {
+        cockpit.jumpTo(500000000);
+        verify(cockpit.frozen);
+        compare(cockpit.page, 0);
+        compare(cockpit.startUs, 350000000);
+        compare(cockpit.endUs, 650000000);
+        compare(cockpit.historyModel.options.from_us, 350000000);
+    }
+    function test_saved_view_applies_filters_without_header_change() {
+        cockpit.applyView({
+            search: "failure",
+            severity: "error",
+            category: "audio",
+            source: "user-journal",
+            window_minutes: 15
+        });
+        compare(cockpit.severity, "error");
+        compare(cockpit.category, "audio");
+        compare(cockpit.windowMinutes, 15);
+        compare(cockpit.historyModel.options.search, "failure");
+        compare(findChild(cockpit, "chronicleTitle").font.pixelSize, Style.font.subtitle);
+        findChild(cockpit, "searchInput").text = "";
+    }
+    function test_history_rows_are_not_refiltered_with_incompatible_unicode_rules() {
+        cockpit.historyModel.result = {
+            events: [
+                {
+                    id: "unicode",
+                    message: "Straße",
+                    unit: "unit",
+                    time_us: 999000000
+                }
+            ],
+            from_us: 700000000,
+            to_us: 1000000000
+        };
+        findChild(cockpit, "searchInput").text = "STRASSE";
+        compare(cockpit.visibleEvents.length, 1);
+        findChild(cockpit, "searchInput").text = "";
     }
     function test_freeze_does_not_pause_recorder() {
         cockpit.toggleFreeze();

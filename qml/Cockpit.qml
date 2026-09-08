@@ -8,6 +8,9 @@ import "Timeline.js" as Model
 FocusScope {
     id: root
     property var service: null
+    property bool viewActive: true
+    property real anchorUs: 0
+    property alias historyModel: browser
     property real nowUs: Date.now() * 1000
     property int page: 0
     property bool frozen: false
@@ -25,9 +28,9 @@ FocusScope {
     property bool detailedExport: false
     readonly property var live: service ? service.snapshot : ({})
     readonly property var view: frozen ? frozenSnapshot : live
-    readonly property real endUs: frozen ? Number(view.time_us || nowUs) : nowUs
-    readonly property real startUs: Model.windowStart(endUs, windowMinutes)
-    readonly property var visibleEvents: Model.filter(view.events || [], {
+    readonly property real endUs: anchorUs > 0 ? anchorUs : nowUs
+    readonly property real startUs: Math.max(0, Model.windowStart(endUs, windowMinutes))
+    readonly property var visibleEvents: browser.result ? browser.result.events : browser.options ? [] : Model.filter(view.events || [], {
         from: startUs,
         to: endUs,
         severity: severity,
@@ -35,7 +38,7 @@ FocusScope {
         source: sourceFilter,
         search: search.text
     })
-    readonly property var selectedEvent: Model.selected(view.events || [], selectedId)
+    readonly property var selectedEvent: Model.selected(visibleEvents, selectedId)
     readonly property var currentIncident: service ? service.incident : null
     readonly property string status: service && !service.daemonRunning ? "OFFLINE" : Model.health(live, nowUs)
     signal dismissed
@@ -45,12 +48,19 @@ FocusScope {
         return "";
     }
     function toggleFreeze() {
-        if (!frozen)
+        if (!frozen) {
             frozenSnapshot = JSON.parse(JSON.stringify(live));
-        frozen = !frozen;
+            anchorUs = browser.result ? browser.result.to_us : nowUs;
+            browser.hold();
+            frozen = true;
+        } else {
+            frozen = false;
+            anchorUs = 0;
+            updateQuery();
+        }
     }
     function selectEvent(id) {
-        if (!frozen && Model.selected(view.events || [], id))
+        if (!frozen && Model.selected(visibleEvents, id))
             toggleFreeze();
         selectedId = id;
     }
@@ -62,19 +72,56 @@ FocusScope {
         });
     }
     function updateQuery() {
-        if (!frozen)
-            request("query", {
-                search: search.text,
-                severity: severity,
-                category: category,
-                source: sourceFilter
-            });
+        browser.load({
+            from_us: Math.round(startUs),
+            to_us: Math.round(endUs),
+            search: search.text,
+            severity: severity,
+            category: category,
+            source: sourceFilter
+        }, frozen ? browser.ceiling : null);
     }
-    onFrozenChanged: if (!frozen)
-        updateQuery()
+    function jumpTo(timeUs) {
+        if (!frozen)
+            toggleFreeze();
+        anchorUs = Math.max(windowMinutes * 60000000, Number(timeUs) + windowMinutes * 30000000);
+        page = 0;
+        updateQuery();
+    }
+    function shiftInterval(direction) {
+        if (!frozen)
+            toggleFreeze();
+        anchorUs = Math.max(windowMinutes * 60000000, endUs + direction * windowMinutes * 60000000);
+        updateQuery();
+    }
+    function applyView(item) {
+        search.text = item.search || "";
+        severity = item.severity || "all";
+        category = item.category || "all";
+        sourceFilter = item.source || "all";
+        windowMinutes = item.window_minutes || 5;
+        page = 0;
+        updateQuery();
+    }
+    onWindowMinutesChanged: updateQuery()
     onSeverityChanged: updateQuery()
     onCategoryChanged: updateQuery()
     onSourceFilterChanged: updateQuery()
+    onViewActiveChanged: if (viewActive && !frozen)
+        updateQuery()
+    HistoryController {
+        id: browser
+        service: root.service
+        active: root.viewActive && root.page === 0
+    }
+    Timer {
+        interval: 5000
+        repeat: true
+        running: root.viewActive && root.page === 0 && !root.frozen
+        onTriggered: root.updateQuery()
+    }
+    Component.onCompleted: if (viewActive)
+        updateQuery()
     Connections {
         target: root.service
         ignoreUnknownSignals: true
@@ -264,9 +311,55 @@ FocusScope {
                     }
                     ChronicleLabel {
                         Layout.fillWidth: true
-                        text: "● info   ▲ warning   ◆ error · newest 500 matches · local time"
+                        text: "● info   ▲ warning   ◆ error · loaded-page lanes"
                         font.pixelSize: Style.font.caption
                     }
+                    ChronicleButton {
+                        text: "Views"
+                        onClicked: viewsDialog.open()
+                    }
+                }
+                RowLayout {
+                    Layout.fillWidth: true
+                    ChronicleButton {
+                        text: "← Interval"
+                        onClicked: root.shiftInterval(-1)
+                    }
+                    ChronicleButton {
+                        text: "Interval →"
+                        onClicked: root.shiftInterval(1)
+                    }
+                    ChronicleLabel {
+                        Layout.fillWidth: true
+                        font.pixelSize: Style.font.caption
+                        text: Model.timestamp(root.startUs) + " → " + Model.timestamp(root.endUs) + " (local)"
+                    }
+                    ChronicleButton {
+                        text: "Newer"
+                        enabled: !browser.busy && browser.pageIndex > 0
+                        onClicked: browser.newer()
+                    }
+                    ChronicleButton {
+                        text: "Older"
+                        enabled: !browser.busy && !!browser.result && !!browser.result.next
+                        onClicked: {
+                            if (!root.frozen)
+                                root.toggleFreeze();
+                            browser.older();
+                        }
+                    }
+                }
+                ChronicleLabel {
+                    Layout.fillWidth: true
+                    font.pixelSize: Style.font.caption
+                    color: browser.retentionChanged || browser.error ? Color.urgent : Color.popups.text
+                    text: browser.error || (browser.retentionChanged ? "Retention changed since page one; some evidence may have expired. " : "") + (browser.result ? "Page " + (browser.pageIndex + 1) + " · " + root.visibleEvents.length + " loaded / " + browser.result.matching_count + " matching retained events" : browser.busy ? "Loading retained evidence…" : "No historical query result")
+                }
+                HistoryDensity {
+                    Layout.fillWidth: true
+                    bins: browser.result ? browser.result.density || [] : Model.buckets(root.visibleEvents, root.startUs, root.endUs, 48)
+                    fromUs: root.startUs
+                    toUs: root.endUs
                 }
                 EventLanes {
                     Layout.fillWidth: true
@@ -439,6 +532,10 @@ FocusScope {
                         ChronicleLabel {
                             Layout.fillWidth: true
                             text: markRow.modelData.label + " · " + Model.timestamp(markRow.modelData.time_us)
+                        }
+                        ChronicleButton {
+                            text: "Context"
+                            onClicked: root.jumpTo(markRow.modelData.time_us)
                         }
                         ChronicleButton {
                             text: "A"
@@ -675,6 +772,117 @@ FocusScope {
         id: queryDelay
         interval: 250
         onTriggered: root.updateQuery()
+    }
+    Dialog {
+        id: viewsDialog
+        title: "Investigation views"
+        modal: true
+        anchors.centerIn: parent
+        width: Math.min(parent.width - 24, Style.space(680))
+        height: Math.min(parent.height - 24, Style.space(480))
+        standardButtons: Dialog.Close
+        font.family: Style.font.family
+        font.pixelSize: Style.font.body
+        background: Rectangle {
+            color: Color.popups.background
+            border.color: Color.popups.border
+        }
+        ColumnLayout {
+            anchors.fill: parent
+            RowLayout {
+                ChronicleButton {
+                    text: "All evidence"
+                    onClicked: {
+                        root.applyView({});
+                        viewsDialog.close();
+                    }
+                }
+                ChronicleButton {
+                    text: "Errors"
+                    onClicked: {
+                        root.applyView({
+                            severity: "error",
+                            window_minutes: 60
+                        });
+                        viewsDialog.close();
+                    }
+                }
+                ChronicleButton {
+                    text: "Audio"
+                    onClicked: {
+                        root.applyView({
+                            category: "audio",
+                            window_minutes: 15
+                        });
+                        viewsDialog.close();
+                    }
+                }
+                ChronicleButton {
+                    text: "Network"
+                    onClicked: {
+                        root.applyView({
+                            category: "network",
+                            window_minutes: 15
+                        });
+                        viewsDialog.close();
+                    }
+                }
+            }
+            RowLayout {
+                Input {
+                    id: viewLabel
+                    Layout.fillWidth: true
+                    maximumLength: 100
+                    placeholderText: "Name the current filters"
+                }
+                ChronicleButton {
+                    text: "Save view"
+                    enabled: !!viewLabel.text.trim()
+                    onClicked: root.request("save_view", {
+                        label: viewLabel.text,
+                        search: search.text,
+                        severity: root.severity,
+                        category: root.category,
+                        source: root.sourceFilter,
+                        window_minutes: root.windowMinutes
+                    })
+                }
+            }
+            ChronicleLabel {
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+                font.pixelSize: Style.font.caption
+                text: "Up to 20 views. Saves filters and window length, not a historical position. Saved text is redacted; review restored filters."
+            }
+            ListView {
+                id: savedViews
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                model: root.live.saved_views || []
+                ScrollBar.vertical: ScrollBar {}
+                delegate: RowLayout {
+                    id: viewRow
+                    required property var modelData
+                    width: savedViews.width - Style.space(14)
+                    ChronicleButton {
+                        Layout.fillWidth: true
+                        textAlignment: Text.AlignLeft
+                        text: viewRow.modelData.label
+                        onClicked: {
+                            root.applyView(viewRow.modelData);
+                            viewsDialog.close();
+                        }
+                    }
+                    ChronicleButton {
+                        text: "Remove"
+                        onClicked: root.request("remove_view", {
+                            id: viewRow.modelData.id
+                        })
+                    }
+                }
+            }
+        }
     }
     Dialog {
         id: confirmDialog

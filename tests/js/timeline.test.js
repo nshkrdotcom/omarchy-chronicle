@@ -24,10 +24,11 @@ test('time projection clamps edges and rejects invalid span', () => {
     assert.equal(M.position(15, 10, 10, 100), null);
 });
 test('buckets count actual observations and errors independently', () => {
-    const buckets = M.buckets([event('a',10),event('b',20,'error'),event('c',20,'error')],0,100,10);
+    const buckets = M.buckets([event('a',10,'warning'),event('b',20,'error'),event('c',20,'error')],0,100,10);
     assert.equal(buckets[2].count,2);
     assert.equal(buckets[2].errors,2);
     assert.equal(buckets[0].count,0);
+    assert.equal(buckets[1].warnings,1);
 });
 test('nearest event selection never crosses outside the view', () => {
     assert.equal(M.nearest([event('a',10),event('b',90)],85,20,100).id,'b');

@@ -1,6 +1,7 @@
 import QtQuick
 import QtTest
 import "../../qml" as Chronicle
+import "../../qml/Timeline.js" as Model
 
 TestCase {
     id: test
@@ -29,6 +30,7 @@ TestCase {
         anchors.margins: 8
         service: fake
         nowUs: test.baseUs
+        viewActive: false
     }
     function initTestCase() {
         var events = [], samples = [];
@@ -114,6 +116,9 @@ TestCase {
             }
         };
         cockpit.selectedId = "event-40";
+        cockpit.historyModel.result = {events:events, matching_count:events.length,
+            from_us:test.baseUs-300000000, to_us:test.baseUs, next:null, ceiling:45,
+            density:Model.buckets(events,test.baseUs-300000000,test.baseUs,48)};
     }
     function test_capture_data() {
         return [
@@ -138,6 +143,10 @@ TestCase {
     function test_capture(data) {
         cockpit.page = data.page;
         wait(150);
+        if (data.page === 0) {
+            compare(cockpit.visibleEvents.length, 45);
+            verify(!!cockpit.selectedEvent);
+        }
         var path = "/tmp/chronicle-fixture-" + data.tag + "-" + Date.now() + ".png";
         grabImage(cockpit).save(path);
         console.log("Fixture screenshot: " + path);

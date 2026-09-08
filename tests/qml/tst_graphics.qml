@@ -36,6 +36,33 @@ TestCase {
             }
         ]
     }
+    Chronicle.HistoryDensity {
+        id: density
+        width: 500
+        bins: [
+            {
+                count: 5,
+                errors: 2,
+                warnings: 1
+            },
+            {
+                count: 0,
+                errors: 0,
+                warnings: 0
+            }
+        ]
+        fromUs: 0
+        toUs: 100000000
+    }
+    function test_density_keyboard_exposes_counts_not_only_color() {
+        density.forceActiveFocus();
+        density.inspectedIndex = -1;
+        keyClick(Qt.Key_Right);
+        verify(density.readout.indexOf("5 events") >= 0);
+        verify(density.readout.indexOf("2 errors") >= 0);
+        keyClick(Qt.Key_Right);
+        verify(density.readout.indexOf("0 events") >= 0);
+    }
     function test_frozen_graph_repaints_when_accent_changes() {
         wait(50);
         const before = grabImage(trace);

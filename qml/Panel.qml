@@ -13,8 +13,10 @@ Ui.Panel {
     onOpenedChanged: {
         if (service)
             service.setPanelOpen(ownerId, opened);
-        if (!opened)
+        if (!opened) {
             cockpit.frozen = false;
+            cockpit.anchorUs = 0;
+        }
     }
     onServiceChanged: if (service)
         service.setPanelOpen(ownerId, opened)
@@ -33,6 +35,7 @@ Ui.Panel {
             id: cockpit
             anchors.fill: parent
             service: root.service
+            viewActive: root.opened
             onDismissed: root.close()
         }
     }

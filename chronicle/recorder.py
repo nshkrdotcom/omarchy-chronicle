@@ -102,6 +102,7 @@ class Recorder:
                 "events": self.store.events(**self.query) if self.panel_open else [],
                 "samples": self.store.samples() if self.panel_open else [],
                 "bookmarks": self.store.bookmarks(),
+                "saved_views": self.store.saved_views(),
                 "incidents": self.store.incident_summaries()}
 
     def command(self, data):
@@ -139,6 +140,11 @@ class Recorder:
             return {"refreshed": True}
         if cmd == "history":
             return self.store.history(**{key: value for key, value in data.items() if key not in ("cmd", "request_id")})
+        if cmd == "save_view":
+            return self.store.save_view(text("label", "Saved view", 100), data)
+        if cmd == "remove_view":
+            self.store.remove_view(text("id"))
+            return {}
         if cmd == "query":
             limit = data.get("limit", 500)
             if type(limit) is not int or not 1 <= limit <= 500:
