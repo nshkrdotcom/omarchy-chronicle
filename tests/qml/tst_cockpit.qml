@@ -63,6 +63,7 @@ TestCase {
         viewActive: false
     }
     function init() {
+        cockpit.nowUs = 1000000000;
         cockpit.page = 0;
         cockpit.frozen = false;
         cockpit.selectedId = "";
@@ -141,6 +142,36 @@ TestCase {
         findChild(cockpit, "searchInput").text = "STRASSE";
         compare(cockpit.visibleEvents.length, 1);
         findChild(cockpit, "searchInput").text = "";
+    }
+    function test_density_and_axis_stay_on_the_returned_interval_until_refresh() {
+        cockpit.historyModel.result = {
+            events: [],
+            from_us: 700000000,
+            to_us: 1000000000
+        };
+        cockpit.nowUs = 1005000000;
+        compare(cockpit.endUs, 1000000000);
+        cockpit.updateQuery();
+        compare(cockpit.historyModel.options.to_us, 1005000000);
+        cockpit.nowUs = 1000000000;
+    }
+    function test_typing_space_in_notes_preserves_typography_and_does_not_freeze() {
+        cockpit.incidentEditor.adopt({
+            id: "one",
+            title: "One",
+            notes: "Text",
+            revision: 1,
+            status: "open",
+            evidence: []
+        });
+        cockpit.page = 2;
+        var field = findChild(cockpit, "incidentNotes");
+        field.forceActiveFocus();
+        field.cursorPosition = field.length;
+        keyClick(Qt.Key_Space);
+        compare(cockpit.incidentEditor.notes, "Text ");
+        verify(!cockpit.frozen);
+        cockpit.forceActiveFocus();
     }
     function test_freeze_does_not_pause_recorder() {
         cockpit.toggleFreeze();

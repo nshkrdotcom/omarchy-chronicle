@@ -74,3 +74,10 @@ test('saved evidence inspection retains exact provenance including zero monotoni
     assert.match(text,/Monotonic µs: 0/);
     assert.match(text,/ID: exact/);
 });
+test('historical jump requires an unambiguous real ISO instant', () => {
+    assert.equal(M.parseInstant('2026-09-07T08:00:00-10:00'), Date.UTC(2026,8,7,18)*1000);
+    assert.equal(M.parseInstant('2026-09-07T18:00Z'), Date.UTC(2026,8,7,18)*1000);
+    for (const invalid of ['2026-09-07 08:00','2026-02-30T18:00Z','2026-09-07T24:00Z','2026-09-07T18:00:60Z','bad','1969-01-01T00:00Z']) {
+        assert.equal(M.parseInstant(invalid), null, invalid);
+    }
+});

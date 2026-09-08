@@ -32,7 +32,7 @@ FocusScope {
     property bool detailedExport: false
     readonly property var live: service ? service.snapshot : ({})
     readonly property var view: frozen ? frozenSnapshot : live
-    readonly property real endUs: anchorUs > 0 ? anchorUs : nowUs
+    readonly property real endUs: anchorUs > 0 ? anchorUs : browser.result ? Number(browser.result.to_us) : nowUs
     readonly property real startUs: Math.max(0, Model.windowStart(endUs, windowMinutes))
     readonly property var visibleEvents: browser.result ? browser.result.events : browser.options ? [] : Model.filter(view.events || [], {
         from: startUs,
@@ -78,9 +78,10 @@ FocusScope {
         editor.open(id);
     }
     function updateQuery() {
+        var targetEnd = frozen && anchorUs > 0 ? anchorUs : nowUs;
         browser.load({
-            from_us: Math.round(startUs),
-            to_us: Math.round(endUs),
+            from_us: Math.max(0, Math.round(targetEnd - windowMinutes * 60000000)),
+            to_us: Math.round(targetEnd),
             search: search.text,
             severity: severity,
             category: category,
@@ -351,6 +352,10 @@ FocusScope {
                     ChronicleButton {
                         text: "Interval →"
                         onClicked: root.shiftInterval(1)
+                    }
+                    ChronicleButton {
+                        text: "Jump…"
+                        onClicked: jumpDialog.open()
                     }
                     ChronicleLabel {
                         Layout.fillWidth: true
@@ -776,6 +781,12 @@ FocusScope {
                             text: modelData.id + " · " + modelData.status + " · checked " + Model.timestamp(modelData.checked_us) + " · last successful read " + Model.timestamp(modelData.last_success_us)
                         }
                     }
+                    ChronicleLabel {
+                        Layout.fillWidth: true
+                        wrapMode: Text.Wrap
+                        font.pixelSize: Style.font.caption
+                        text: browser.result && browser.result.retained ? "Retained source-time bounds: " + Model.timestamp(browser.result.retained.from_us) + " → " + Model.timestamp(browser.result.retained.to_us) + ". Bounds do not establish continuous coverage." + (browser.result.receipt_age_estimated ? " Legacy receipt ages are migration-time estimates." : "") : "Open Timeline to query retained bounds. Receipt order controls count retention; source wall time controls display order."
+                    }
                     RowLayout {
                         ChronicleButton {
                             text: root.live.paused ? "Resume recording" : "Pause recording"
@@ -816,6 +827,48 @@ FocusScope {
         id: queryDelay
         interval: 250
         onTriggered: root.updateQuery()
+    }
+    Dialog {
+        id: jumpDialog
+        title: "Jump to an exact moment"
+        modal: true
+        anchors.centerIn: parent
+        width: Math.min(parent.width - 24, Style.space(620))
+        standardButtons: Dialog.Cancel
+        font.family: Style.font.family
+        font.pixelSize: Style.font.body
+        background: Rectangle {
+            color: Color.popups.background
+            border.color: Color.popups.border
+        }
+        ColumnLayout {
+            width: parent.width
+            ChronicleLabel {
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+                text: "Enter an ISO timestamp with Z or a UTC offset to avoid timezone/DST ambiguity. The chosen interval is centered on that moment; labels remain local time."
+            }
+            Input {
+                id: jumpInput
+                Layout.fillWidth: true
+                placeholderText: "2026-09-07T08:00:00-10:00"
+                maximumLength: 40
+                Accessible.name: "Exact historical timestamp"
+            }
+            ChronicleLabel {
+                Layout.fillWidth: true
+                font.pixelSize: Style.font.caption
+                text: jumpInput.text && Model.parseInstant(jumpInput.text) === null ? "Use a valid date and explicit timezone, e.g. 2026-09-07T18:00Z." : "Recording continues while you inspect history."
+            }
+            ChronicleButton {
+                text: "Open interval"
+                enabled: Model.parseInstant(jumpInput.text) !== null
+                onClicked: {
+                    root.jumpTo(Model.parseInstant(jumpInput.text));
+                    jumpDialog.close();
+                }
+            }
+        }
     }
     Dialog {
         id: viewsDialog

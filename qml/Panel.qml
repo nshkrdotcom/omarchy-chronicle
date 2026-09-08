@@ -16,6 +16,9 @@ Ui.Panel {
         if (!opened) {
             cockpit.frozen = false;
             cockpit.anchorUs = 0;
+        } else {
+            cockpit.nowUs = Date.now() * 1000;
+            cockpit.updateQuery();
         }
     }
     onServiceChanged: if (service)

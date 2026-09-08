@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-.PHONY: test test-python test-js test-qml lint check demo
+.PHONY: test test-python test-js test-qml lint check demo preview integration live-readonly soak
 test-python:
 	PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p 'test_*.py' -v
 test-js:
@@ -12,6 +12,8 @@ lint:
 check: test test-qml lint
 demo:
 	QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software /usr/lib/qt6/bin/qmltestrunner -input tests/qml_preview -import tests/support
+preview:
+	python3 scripts/preview.py
 integration:
 	python3 scripts/integration.py
 live-readonly:

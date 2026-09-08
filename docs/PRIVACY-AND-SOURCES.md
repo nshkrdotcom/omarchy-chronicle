@@ -40,14 +40,17 @@ text is plain text, never treated as rich text or a command.
 
 | Resource | Bound |
 | --- | --- |
-| Normal journal/lifecycle history | 10,000 events and seven-day age cutoff |
+| Normal journal/lifecycle history | 10,000 events by receipt sequence; seven-day receipt-wall-age cutoff |
 | Resource observations | 720 samples, nominal five-second collection cadence |
 | Bookmarks | 256, explicit deletion at capacity |
 | Incidents | 128, explicit deletion at capacity |
+| Separate incident drafts | One per incident, 4096 characters, redacted and version-checked |
+| Named views | 20, labels 100 and literal search 200 characters |
 | Saved evidence per incident | 64 copies |
 | Message / unit / title / notes | 2048 / 160 / 100 / 4096 characters |
 | Database | 8192 SQLite pages (32 MiB at the created 4-KiB page size) |
-| Query result | Newest 500 matching events |
+| History query result | 200 default / 500 maximum per page; time bounds before limit; stable keyset continuation |
+| Density summary | 48 bins over all matching retained events in the requested interval |
 | Pending UI requests | 32; 30-second acknowledgement timeout |
 | Export preview | One, five-minute lifetime, 2-MiB byte limit |
 | Export files | 32, unique names, no automatic overwrite |
@@ -58,6 +61,14 @@ can reach the shared database page budget before their count limits. The WAL
 and shared-memory sidecars add space beyond the database page budget.
 `journal_size_limit` is a checkpoint limit, not a hard cap on active WAL size.
 Only one recorder owns a state directory, guarded with a nonblocking file lock.
+
+Schema 2 uses receipt sequence for count retention, so source clock errors cannot
+crowd out newly collected rows. Legacy receipt times are migration-time estimates.
+Receipt wall-clock rollback can extend the age cutoff; the hard count limit
+continues to apply. Source wall/boot/monotonic provenance is not rewritten.
+Historical page ceilings exclude later arrivals but cannot prevent retention
+deletion. A retention generation change warns the operator rather than claiming
+an immutable snapshot or continuous source coverage.
 
 Default persistent state follows the XDG state specification; relative XDG
 roots are ignored. The selected state directory must be owned by the current

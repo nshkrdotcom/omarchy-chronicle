@@ -7,6 +7,11 @@ for Omarchy. It brings timestamped evidence, bounded resource history,
 bookmarks, before/after comparisons, and saved investigations into one native
 panel. Correlation is not proof of causation.
 
+![Chronicle preview](preview.png)
+
+*Full-panel synthetic preview, without an OS titlebar. Native installed
+acceptance is pending; regenerate with `make preview`.*
+
 **Status: pre-installation acceptance build.** Implemented and tested outside
 the installed desktop. Native installed acceptance is deliberately deferred;
 do not enable it in a shared development session without coordinating first.
@@ -16,6 +21,11 @@ do not enable it in a shared development session without coordinating first.
 - **Investigate a moment:** synchronized event lanes, severity shapes, literal
   search across retained records, source/category/level filters, and 5-minute,
   15-minute, hour, or seven-day windows. Exact evidence identity and provenance.
+- **Explore complete retained history:** time-filtered pages, full-interval
+  density/counts, older/newer navigation, exact-time jumps and bookmark context. Independent
+  queries per cockpit; receipt ceilings and explicit retention-loss warnings.
+- **Reuse investigations:** quick error/audio/network presets and up to 20
+  named durable filter views, without saving stale page cursors.
 - **Inspect pressure:** CPU, memory, and I/O PSI traces with actual scales,
   missing-data gaps, pointer inspection and keyboard sample stepping. PSI is
   time stalled, not resource utilization.
@@ -27,6 +37,8 @@ do not enable it in a shared development session without coordinating first.
   changes, units and missing-field qualification.
 - **Build an investigation:** named incidents, notes, resolve/reopen, pinned
   evidence copies that survive ordinary history retention, explicit removal.
+- **Protect human work:** separately acknowledged durable drafts, revision-checked
+  note saves, explicit three-version conflict review, and saved-copy inspection.
 - **Share deliberately:** metadata-only export by default, opt-in messages and
   notes, full exact-byte preview, expiring confirmation, private local JSON file.
   No upload, clipboard copy, or automatic remediation.
@@ -54,6 +66,7 @@ make test-qml      # Offscreen UI and stubbed service-controller tests
 make integration   # Real windowless Quickshell ↔ Python, synthetic data
 make lint          # Read-only resolution against packaged Omarchy imports
 make demo          # Four synthetic page screenshots in /tmp; no visible window
+make preview       # Refresh the titlebar-free full-panel README preview.png
 make soak          # 60-second synthetic helper soak, 50 panel-state cycles
 make live-readonly # Optional one-shot real source read with temporary state
 ```

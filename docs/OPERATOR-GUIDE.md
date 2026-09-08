@@ -119,7 +119,9 @@ invalidates the helper's previous single-use token, including in another panel.
 The Timeline now requests its own bounded history pages, independent of other
 open cockpits. The interval is applied before the page limit. **Older/Newer**
 traverse matches; Older freezes the interval and receipt membership. **Interval**
-arrows move the time range. A bookmark's **Context** opens a centered historical
+arrows move the time range. **Jump** accepts a real ISO timestamp with an explicit
+`Z` or UTC offset (for example `2026-09-07T08:00:00-10:00`), avoiding ambiguous
+local times. A bookmark's **Context** opens a centered historical
 interval. The existing **Live** header control returns to the present.
 
 The density strip counts every matching retained event in the interval; the

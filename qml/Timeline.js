@@ -78,3 +78,12 @@ function evidenceText(event) {
         + "\nMonotonic µs: " + (event.monotonic_us === null || event.monotonic_us === undefined ? "unavailable" : event.monotonic_us)
         + "\nID: " + event.id;
 }
+function parseInstant(text) {
+    var match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(Z|[+-]\d{2}:\d{2})$/.exec(String(text).trim());
+    if (!match) return null;
+    var year=Number(match[1]), month=Number(match[2]), day=Number(match[3]);
+    if (year<1970 || year>2255 || month<1 || month>12 || day<1 || day>new Date(Date.UTC(year,month,0)).getUTCDate()
+        || Number(match[4])>23 || Number(match[5])>59 || Number(match[6] || 0)>59) return null;
+    var milliseconds=Date.parse(String(text).trim());
+    return Number.isFinite(milliseconds) && milliseconds>=0 && milliseconds*1000<=Number.MAX_SAFE_INTEGER ? milliseconds*1000 : null;
+}

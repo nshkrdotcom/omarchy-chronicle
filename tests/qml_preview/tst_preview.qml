@@ -1,5 +1,6 @@
 import QtQuick
 import QtTest
+import qs.Commons
 import "../../qml" as Chronicle
 import "../../qml/Timeline.js" as Model
 
@@ -11,6 +12,10 @@ TestCase {
     width: 1280
     height: 840
     property real baseUs: Date.UTC(2026, 8, 7, 18, 0, 0) * 1000
+    Rectangle {
+        anchors.fill: parent
+        color: Color.popups.background
+    }
     QtObject {
         id: fake
         property var snapshot: ({})
@@ -156,7 +161,9 @@ TestCase {
             verify(!!cockpit.selectedEvent);
         }
         var path = "/tmp/chronicle-fixture-" + data.tag + "-" + Date.now() + ".png";
-        grabImage(cockpit).save(path);
+        // Capture the entire client area with native-style padding. No desktop
+        // screenshot, window decorations, titlebar, compositing or image editing.
+        grabImage(test).save(path);
         console.log("Fixture screenshot: " + path);
     }
 }

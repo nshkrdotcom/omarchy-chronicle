@@ -1,5 +1,6 @@
 import json
 import re
+import struct
 from pathlib import Path
 import unittest
 
@@ -33,3 +34,13 @@ class RepositoryTests(unittest.TestCase):
     def test_persisted_files_not_tracked(self):
         for filename in ROOT.rglob("*.sqlite*"):
             self.fail("Private state in repository: " + str(filename))
+
+    def test_readme_opens_with_full_panel_preview(self):
+        readme = (ROOT / "README.md").read_text()
+        self.assertLess(readme.index("![Chronicle preview](preview.png)"), readme.index("## Operator capabilities"))
+        png = (ROOT / "preview.png").read_bytes()
+        self.assertEqual(png[:8], b"\x89PNG\r\n\x1a\n")
+        width, height = struct.unpack(">II", png[16:24])
+        self.assertGreaterEqual(width, 1200)
+        self.assertGreaterEqual(height, 800)
+        self.assertLess(len(png), 2 * 1024 * 1024)
