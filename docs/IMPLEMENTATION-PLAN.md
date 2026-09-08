@@ -5,7 +5,7 @@
 - Repository: https://github.com/nshkrdotcom/omarchy-chronicle
 - Checkout: `/home/home/src/omarchy-chronicle`.
 - Feature branch: `feat/chronicle-operator-cockpit`; commit and push milestones.
-- Identity: `nshkr.chronicle`; MIT, Copyright (c) 2026 nshkrdotcom.
+- Identity: `com.nshkr.chronicle`; MIT, Copyright (c) 2026 nshkrdotcom.
 - No installation, symlink into plugin directories, enabling, shell IPC,
   desktop restart, configuration writes, or live graphical acceptance yet.
   Another agent owns ongoing installed Omarchy work.
@@ -41,8 +41,8 @@
    gaps, never interpolate missing values as zero. Reading /proc does not need
    a privileged agent. Sample only scalar pressure/memory values, not commands.
 5. [XDG base directories](https://specifications.freedesktop.org/basedir-spec/latest/):
-   persistent local state belongs in `$XDG_STATE_HOME/nshkr.chronicle` or
-   `~/.local/state/nshkr.chronicle`; temporary test state is explicitly supplied.
+   persistent local state belongs in `$XDG_STATE_HOME/com.nshkr.chronicle` or
+   `~/.local/state/com.nshkr.chronicle`; temporary test state is explicitly supplied.
 
 ## Product scope
 

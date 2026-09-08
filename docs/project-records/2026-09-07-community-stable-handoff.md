@@ -11,7 +11,7 @@ not been installed, enabled, reloaded or accepted on the live desktop.
 - Checkout: `/home/home/src/omarchy-chronicle`
 - Repository: https://github.com/nshkrdotcom/omarchy-chronicle
 - Branch: `feat/chronicle-operator-cockpit`
-- Plugin ID/version: `nshkr.chronicle` / `0.1.0`
+- Plugin ID/version: `com.nshkr.chronicle` / `0.1.0`
 - License: MIT, Copyright (c) 2026 nshkrdotcom
 - Latest implementation checkpoint and final CI: see the completion receipt
   appended after the source commit. Never transfer a green result to another SHA.

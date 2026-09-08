@@ -4,7 +4,7 @@ import qs.Ui as Ui
 
 Ui.BarWidget {
     id: root
-    moduleName: "nshkr.chronicle"
+    moduleName: "com.nshkr.chronicle"
     property string omarchyPath: ""
     property var shell: null
     property var manifest: null

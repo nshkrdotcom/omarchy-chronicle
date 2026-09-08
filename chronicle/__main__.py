@@ -18,7 +18,7 @@ from .errors import ConflictError
 
 def state_dir():
     base = os.environ.get("XDG_STATE_HOME", "")
-    return (Path(base) if base and Path(base).is_absolute() else Path.home() / ".local/state") / "nshkr.chronicle"
+    return (Path(base) if base and Path(base).is_absolute() else Path.home() / ".local/state") / "com.nshkr.chronicle"
 
 
 def emit(data):

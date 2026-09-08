@@ -7,7 +7,7 @@ This document is a continuation plan, not permission to change the desktop.
 
 Project: `/home/home/src/omarchy-chronicle`.
 Remote: https://github.com/nshkrdotcom/omarchy-chronicle .
-Plugin: `nshkr.chronicle`, version `0.1.0`, MIT © 2026 nshkrdotcom.
+Plugin: `com.nshkr.chronicle`, version `0.1.0`, MIT © 2026 nshkrdotcom.
 Branch: `feat/chronicle-operator-cockpit` (also the current remote default).
 Tested production checkpoint: `9e9e4174a15574d220ffec934cfe4cd6a67876bd`.
 Read the completion report in this directory for final documentation/CI revisions.
@@ -145,7 +145,7 @@ checkout, then add that local repository disabled:
 git clone --no-hardlinks --branch feat/chronicle-operator-cockpit https://github.com/nshkrdotcom/omarchy-chronicle.git /home/home/src/omarchy-chronicle-acceptance
 git -C /home/home/src/omarchy-chronicle-acceptance switch --detach SELECTED_FULL_SHA
 omarchy plugin add /home/home/src/omarchy-chronicle-acceptance --yes
-git -C /home/home/.config/omarchy/plugins/nshkr.chronicle rev-parse HEAD
+git -C /home/home/.config/omarchy/plugins/com.nshkr.chronicle rev-parse HEAD
 ```
 
 `SELECTED_FULL_SHA` is a required human-reviewed substitution, not a literal
@@ -159,7 +159,7 @@ or, after review, change the installed origin back to the public GitHub URL.
 Do not run automatic updates during acceptance. No installed code edits.
 
 ```sh
-omarchy plugin enable nshkr.chronicle --section right
+omarchy plugin enable com.nshkr.chronicle --section right
 ```
 
 Confirm the chosen bar placement with the human first. Keep other bar entries
@@ -257,7 +257,7 @@ expected/actual result, timing, exact SHA, environment and private evidence.
 If a crash/core dump occurs, follow the crash-diagnosis skill then; do not infer
 a cause from a successful retry. Do not publish sensitive core/log contents.
 
-The least invasive rollback is `omarchy plugin disable nshkr.chronicle` after
+The least invasive rollback is `omarchy plugin disable com.nshkr.chronicle` after
 the operator approves it. Confirm owned-process exit and preserve private
 Chronicle data. Restore only Chronicle-specific/test-induced settings using
 the saved baseline and a reviewed diff; never replace the entire shell config

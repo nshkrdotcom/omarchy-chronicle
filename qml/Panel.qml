@@ -4,7 +4,7 @@ import qs.Ui as Ui
 
 Ui.Panel {
     id: root
-    moduleName: "nshkr.chronicle"
+    moduleName: "com.nshkr.chronicle"
     manageIpc: false
     property var anchorItem: null
     property var hostWidget: null

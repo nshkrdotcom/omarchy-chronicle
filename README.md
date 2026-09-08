@@ -6,7 +6,7 @@
 
 What changed just before this broke?
 
-Chronicle (`nshkr.chronicle`) is a local-first desktop incident flight recorder
+Chronicle (`com.nshkr.chronicle`) is a local-first desktop incident flight recorder
 for Omarchy. It brings timestamped evidence, resource-pressure history,
 bookmarks, before/after comparisons, and saved investigations into one native
 panel. Correlation is not proof of causation.
@@ -104,8 +104,8 @@ and `MemAvailable`. Accessible system-journal reading is an explicit operator
 opt-in. Journal-backed network/audio/power/desktop categories are evidence from
 those services, **not independent device-state watchers or complete audit logs**.
 
-Persistent state defaults to `$XDG_STATE_HOME/nshkr.chronicle`, or
-`~/.local/state/nshkr.chronicle` when unset/relative. Recording continues while
+Persistent state defaults to `$XDG_STATE_HOME/com.nshkr.chronicle`, or
+`~/.local/state/com.nshkr.chronicle` when unset/relative. Recording continues while
 the panel is closed. Pause stops source collection; it does not erase history.
 
 Messages have size caps and are redacted before persistence, but generic redaction

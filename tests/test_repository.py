@@ -28,7 +28,7 @@ class RepositoryTests(unittest.TestCase):
 
     def test_manifest_has_only_native_service_and_bar(self):
         manifest = json.loads((ROOT / "manifest.json").read_text())
-        self.assertEqual(manifest["id"], "nshkr.chronicle")
+        self.assertEqual(manifest["id"], "com.nshkr.chronicle")
         self.assertEqual(manifest["kinds"], ["service", "bar-widget"])
         for entry in manifest["entryPoints"].values():
             self.assertTrue((ROOT / entry).is_file())
