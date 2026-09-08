@@ -1,6 +1,7 @@
 """Bounded, allowlisted evidence. Classification does not establish causation."""
 
 import hashlib
+import json
 import math
 import re
 
@@ -8,6 +9,7 @@ METRICS = {
     "cpu_some_avg10": "% stalled", "memory_some_avg10": "% stalled",
     "io_some_avg10": "% stalled", "memory_available_kib": "KiB",
 }
+MAX_EVENT_BYTES = 12000
 
 
 def scalar(value):
@@ -65,11 +67,30 @@ def normalize(record, source="user-journal"):
         if any(token in kind for token in tokens):
             category = name
             break
-    return {"id": hashlib.sha256((source + "\0" + cursor).encode()).hexdigest()[:32],
+    event = {"id": hashlib.sha256((source + "\0" + cursor).encode()).hexdigest()[:32],
             "cursor": cursor, "time_us": timestamp, "monotonic_us": monotonic,
             "boot": boot, "source": source, "unit": unit, "category": category,
             "severity": "error" if priority <= 3 else "warning" if priority == 4 else "info",
             "message": message}
+    # The same escaped JSON budget used by persistence must be satisfied here,
+    # while the source adapter can still reject/qualify an individual record.
+    # Unicode escape expansion must not turn a valid read into a recorder exit.
+    def size():
+        return len(json.dumps(event, ensure_ascii=True, sort_keys=True))
+    if size() > MAX_EVENT_BYTES:
+        event["message"] = " [truncated]"
+        if size() > MAX_EVENT_BYTES:
+            raise ValueError("journal identity exceeds persistence budget")
+        low, high = 0, max(0, len(message) - len(" [truncated]"))
+        while low < high:
+            middle = (low + high + 1) // 2
+            event["message"] = message[:middle] + " [truncated]"
+            if size() <= MAX_EVENT_BYTES:
+                low = middle
+            else:
+                high = middle - 1
+        event["message"] = message[:low] + " [truncated]"
+    return event
 
 
 def metrics(values):

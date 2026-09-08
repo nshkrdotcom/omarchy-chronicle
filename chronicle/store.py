@@ -9,7 +9,7 @@ import stat
 import time
 import uuid
 
-from .evidence import METRICS, metrics, redact
+from .evidence import MAX_EVENT_BYTES, METRICS, metrics, redact
 from .history import query as history_query, filters, integer
 from .errors import ConflictError
 
@@ -109,7 +109,7 @@ class Store:
             raise ValueError("batch exceeds limit")
         with self.db:
             for event in events:
-                if event["source"] != source or len(encode(event)) > 12000:
+                if event["source"] != source or len(encode(event)) > MAX_EVENT_BYTES:
                     raise ValueError("invalid event source or size")
                 self.db.execute("INSERT OR IGNORE INTO events(id,time_us,source,category,severity,body,received_us) VALUES(?,?,?,?,?,?,?)",
                                 (event["id"], event["time_us"], source, event["category"],

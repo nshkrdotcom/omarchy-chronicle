@@ -1,4 +1,5 @@
 import json
+from contextlib import closing
 from pathlib import Path
 import sqlite3
 import tempfile
@@ -117,7 +118,7 @@ class HistoryTests(unittest.TestCase):
         incident = self.store.create_incident("Preserve")
         self.store.pin(incident["id"], event["id"])
         self.store.close()
-        with sqlite3.connect(self.path / "chronicle.sqlite3") as db:
+        with closing(sqlite3.connect(self.path / "chronicle.sqlite3")) as db, db:
             db.executescript("""
                 ALTER TABLE events RENAME TO migrated_events;
                 CREATE TABLE events (id TEXT PRIMARY KEY, time_us INTEGER NOT NULL,
@@ -143,7 +144,7 @@ class HistoryTests(unittest.TestCase):
         path.mkdir(mode=0o700)
         event = normalize(entry("legacy-fail", self.now))
         database = path / "chronicle.sqlite3"
-        with sqlite3.connect(database) as db:
+        with closing(sqlite3.connect(database)) as db, db:
             db.executescript("CREATE TABLE events(id TEXT PRIMARY KEY,time_us INTEGER,source TEXT,category TEXT,severity TEXT,body TEXT); PRAGMA user_version=1;")
             db.execute("INSERT INTO events VALUES(?,?,?,?,?,?)", (event["id"],event["time_us"],event["source"],event["category"],event["severity"],json.dumps(event)))
         connect = sqlite3.connect
@@ -155,7 +156,7 @@ class HistoryTests(unittest.TestCase):
         with patch("chronicle.store.sqlite3.connect", side_effect=lambda *a, **k: connect(*a, **k, factory=FailingConnection)):
             with self.assertRaises(sqlite3.OperationalError):
                 Store(path)
-        with connect(database) as db:
+        with closing(connect(database)) as db:
             self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0],1)
             self.assertEqual(json.loads(db.execute("SELECT body FROM events").fetchone()[0]),event)
             self.assertNotIn("seq",[row[1] for row in db.execute("PRAGMA table_info(events)")])

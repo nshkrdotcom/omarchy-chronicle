@@ -10,7 +10,7 @@ import time
 import unittest
 from unittest.mock import patch
 
-from chronicle.evidence import redact
+from chronicle.evidence import redact, normalize
 from chronicle.recorder import Recorder
 from chronicle.sources import Journal
 from chronicle.store import Store
@@ -132,3 +132,20 @@ class HardeningTests(unittest.TestCase):
         self.store.now = lambda: 1
         with self.assertRaises(ValueError):
             self.store.confirm_export(preview["token"])
+
+    def test_unicode_message_fits_persistence_budget_and_is_visibly_truncated(self):
+        event=normalize({"__CURSOR":"unicode", "_BOOT_ID":"boot", "__REALTIME_TIMESTAMP":str(self.store.now()), "MESSAGE":"界"*2048})
+        self.store.ingest("user-journal",[event])
+        self.assertLessEqual(len(json.dumps(event,ensure_ascii=True,sort_keys=True)),12000)
+        self.assertIn("[truncated]",event["message"])
+
+    def test_unpersistable_identity_becomes_qualified_gap_not_recorder_crash(self):
+        lines=[{"__CURSOR":"界"*4096,"_BOOT_ID":"boot","__REALTIME_TIMESTAMP":str(self.store.now()),"MESSAGE":"oversized identity"},
+               {"__CURSOR":"valid","_BOOT_ID":"boot","__REALTIME_TIMESTAMP":str(self.store.now()),"MESSAGE":"valid record"}]
+        journal=Journal(runner=lambda *a,**k:{"status":"ok","code":0,"stdout":"\n".join(json.dumps(row) for row in lines).encode()})
+        recorder=Recorder(self.store)
+        recorder.journals=[journal]
+        recorder.poll()
+        self.assertEqual(self.store.cursor("user-journal"),"valid")
+        self.assertEqual(recorder.sources["user-journal"]["status"],"degraded")
+        self.assertTrue(any("history gap" in row["message"] for row in self.store.events()))

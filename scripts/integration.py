@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Real Quickshell stdio transport, no windows, host IPC, installation or live sources."""
 import json
+from contextlib import closing
 import os
 from pathlib import Path
 import shutil
@@ -54,7 +55,7 @@ with tempfile.TemporaryDirectory(prefix="chronicle-transport-") as directory:
     assert len(evidence["evidence"]) == 1
     assert evidence["detail_included"] is False
     assert not any("message" in event for event in evidence["evidence"])
-    with sqlite3.connect(work / "state/chronicle.sqlite3") as db:
+    with closing(sqlite3.connect(work / "state/chronicle.sqlite3")) as db:
         incident = json.loads(db.execute("SELECT body FROM incidents").fetchone()[0])
         assert incident["notes"] == "Verified committed investigation notes"
         assert incident["revision"] == 3
