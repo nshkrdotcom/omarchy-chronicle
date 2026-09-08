@@ -76,6 +76,12 @@ other warnings and failed imports are errors. This is not a zero-warning claim.
   reports on both pass and fail. Regression tests cover premature baselines,
   actual FD growth and absent readiness. This failed attempt is not erased by
   a successful retry; the original incomplete failure report is a limitation.
+- The corrected harness passed against `8c8844b` in 60.01 seconds: 50 panel-state
+  cycles, 112 snapshots, 22,968 KiB peak RSS, baseline/final/maximum-ready FD count
+  all 8, zero FD growth, and 0.07 CPU seconds. The numeric report is retained
+  locally at `/tmp/chronicle-soak-report-utpv97qt.json`. GitHub Actions run
+  `34173160700` passed all jobs on that same revision. Subsequent documentation
+  commits do not change the tested production implementation or soak harness.
 - Fixture previews of Timeline, Bookmarks, Incidents and Sources were inspected.
   Follow-up refinements included left-aligned event rows, native notes styling,
   readable comparisons, only relevant search controls, pressure lenses and
